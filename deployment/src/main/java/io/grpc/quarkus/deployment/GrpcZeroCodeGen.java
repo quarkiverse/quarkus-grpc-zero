@@ -160,7 +160,7 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                         FileSystem fs = ZeroFs.newFileSystem(
                                 Configuration.unix().toBuilder().setAttributeViews("unix").build())) {
 
-                    Path target = fs.getPath("/");
+                    // Path target = fs.getPath("/");
 
                     var wasiOptsBuilder = WasiOptions.builder()
                             .withStdout(stdout)
@@ -170,33 +170,35 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                     command.add("protoc-gen-descriptor");
 
                     for (String protoDir : protoDirs) {
-                        var dest = target.resolve(protoDir);
+                        var dest = fs.getPath(protoDir);
                         Files.createDirectories(dest.getParent());
                         com.dylibso.chicory.wasi.Files.copyDirectory(Path.of(protoDir), dest);
                         command.add(String.format("-I=%s", escapeWhitespace(protoDir)));
                         wasiOptsBuilder.withDirectory(dest.toString(), dest);
                     }
                     for (String protoImportDir : protosToImport) {
-                        var dest = target.resolve(protoImportDir);
+                        var dest = fs.getPath(protoImportDir);
                         Files.createDirectories(dest.getParent());
                         com.dylibso.chicory.wasi.Files.copyDirectory(Path.of(protoImportDir), dest);
                         command.add(String.format("-I=%s", escapeWhitespace(protoImportDir)));
                         wasiOptsBuilder.withDirectory(dest.toString(), dest);
                     }
 
+                    // trusting the protoFile folder is already included
                     for (String protoFile : protoFiles) {
-                        var dest = target.resolve(protoFile);
-                        Files.createDirectories(dest.getParent());
                         try (InputStream is = Files.newInputStream(Path.of(protoFile))) {
-                            Files.copy(is, dest, StandardCopyOption.REPLACE_EXISTING);
+                            Files.copy(is, fs.getPath(Path.of(protoFile).toString()), StandardCopyOption.REPLACE_EXISTING);
                         }
-                        command.add(escapeWhitespace(protoFile));
-                        wasiOptsBuilder.withDirectory(dest.getParent().toString(), dest.getParent());
+                        // TODO: seems like I need to strip the trailing / investigate?
+                        if (protoFile.startsWith("/")) {
+                            protoFile = protoFile.replaceFirst("/", "");
+                        }
+                        log.error("ProtoFile: " + Path.of(protoFile).getFileName().toString());
+                        command.add(Path.of(protoFile).getFileName().toString());
                     }
 
                     var wasiOpts = wasiOptsBuilder
                             .withArguments(command)
-                            .withDirectory(target.toString(), target)
                             .build();
                     var wasi = WasiPreview1.builder().withOptions(wasiOpts).build();
                     var imports = ImportValues.builder()
@@ -209,6 +211,7 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                                                     new MemoryLimits(3, MemoryLimits.MAX_PAGES, true))))
                             .build();
 
+                    log.error("command: " + command.stream().collect(Collectors.joining(" ")));
                     try {
                         Instance
                                 .builder(PROTOC_GEN_DESCRIPTORS)
@@ -216,19 +219,18 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                                 .withMachineFactory(ProtocGenDescriptors::create)
                                 .build();
                     } catch (WasiExitException exit) {
-                        System.out.println(stdout);
+                        // System.out.println(stdout);
                         System.err.println(stderr);
                         if (exit.exitCode() != 0) {
                             throw new RuntimeException("Error running protoc-gen-descriptors: " + exit.exitCode());
-                        } else {
-                            descriptor = stdout.toByteArray();
                         }
                     }
+                    descriptor = stdout.toByteArray();
                 } catch (IOException e) {
                     throw new RuntimeException("Failure in file access " + e);
                 }
 
-                log.error("DEBUG - NOW I SHOULD HAVE THE DESCRIPTOR");
+                log.error("DEBUG - NOW I SHOULD HAVE THE DESCRIPTOR " + descriptor);
 
                 // Load the descriptor set
                 DescriptorProtos.FileDescriptorSet descriptorSet = DescriptorProtos.FileDescriptorSet.parseFrom(descriptor);

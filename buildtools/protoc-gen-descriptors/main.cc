@@ -25,29 +25,35 @@ int main(int argc, char** argv) {
   std::vector<std::string> proto_files;
   std::vector<std::string> include_paths;
 
+  std::cerr << "[DEBUG] Starting argument parsing..." << std::endl;
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
+    std::cerr << "[DEBUG] Processing argument: '" << arg << "'" << std::endl;
     if (arg.rfind("-I=", 0) == 0) {
-      include_paths.push_back(arg.substr(3));
+      std::string path = arg.substr(3);
+      include_paths.push_back(path);
+      std::cerr << "[DEBUG] Detected include path: '" << path << "'" << std::endl;
     } else if (!arg.empty() && arg[0] != '-') {
       proto_files.push_back(arg);
+      std::cerr << "[DEBUG] Detected proto file: '" << arg << "'" << std::endl;
     } else {
-      std::cerr << "Unknown argument: " << arg << std::endl;
-      return 1;
+      std::cerr << "[DEBUG] Unknown or ignored argument: '" << arg << "'" << std::endl;
     }
   }
 
   if (proto_files.empty()) {
-    std::cerr << "No .proto files specified." << std::endl;
+    std::cerr << "[ERROR] No .proto files specified." << std::endl;
     return 1;
   }
 
   // Set up the importer
   google::protobuf::compiler::DiskSourceTree source_tree;
   if (include_paths.empty()) {
-    source_tree.MapPath("", "."); // Default to current directory
+    std::cerr << "[DEBUG] No include paths specified, using current directory." << std::endl;
+    source_tree.MapPath("", ".");
   } else {
     for (const auto& path : include_paths) {
+      std::cerr << "[DEBUG] Adding include path to source tree: '" << path << "'" << std::endl;
       source_tree.MapPath("", path);
     }
   }
@@ -55,9 +61,21 @@ int main(int argc, char** argv) {
 
   google::protobuf::FileDescriptorSet fd_set;
   for (const auto& file : proto_files) {
+    std::cerr << "[DEBUG] Importing proto file: '" << file << "'" << std::endl;
+    // Read and print file contents to stderr
+    std::ifstream proto_in(file);
+    if (!proto_in) {
+      std::cerr << "[ERROR] Could not open proto file: '" << file << "'" << std::endl;
+    } else {
+      std::cerr << "[DEBUG] Contents of '" << file << "':\n";
+      std::string line;
+      while (std::getline(proto_in, line)) {
+        std::cerr << line << std::endl;
+      }
+    }
     const google::protobuf::FileDescriptor* fd = importer.Import(file.c_str());
     if (!fd) {
-      std::cerr << "Failed to import: " << file << std::endl;
+      std::cerr << "[ERROR] Failed to import: '" << file << "'" << std::endl;
       return 1;
     }
     auto* proto = fd_set.add_file();
