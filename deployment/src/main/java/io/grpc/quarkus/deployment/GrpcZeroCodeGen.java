@@ -2,8 +2,12 @@ package io.grpc.quarkus.deployment;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static java.nio.file.Files.copy;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -24,6 +28,16 @@ import java.util.stream.Stream;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
+import com.dylibso.chicory.runtime.ByteArrayMemory;
+import com.dylibso.chicory.runtime.ImportMemory;
+import com.dylibso.chicory.runtime.ImportValues;
+import com.dylibso.chicory.runtime.Instance;
+import com.dylibso.chicory.wasi.WasiExitException;
+import com.dylibso.chicory.wasi.WasiOptions;
+import com.dylibso.chicory.wasi.WasiPreview1;
+import com.dylibso.chicory.wasm.WasmModule;
+import com.dylibso.chicory.wasm.types.MemoryLimits;
+import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.compiler.PluginProtos;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -34,6 +48,8 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathFilter;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.utilities.OS;
+import io.roastedroot.zerofs.Configuration;
+import io.roastedroot.zerofs.ZeroFs;
 
 /**
  * Code generation for gRPC. Generates java classes from proto files placed in either src/main/proto or src/test/proto
@@ -57,6 +73,9 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
     private static final String DESCRIPTOR_SET_FILENAME = "quarkus.generate-code.grpc.descriptor-set.name";
 
     private static final String GENERATE_KOTLIN = "quarkus.generate-code.grpc.kotlin.generate";
+
+    private static final WasmModule PROTOC_GEN_DESCRIPTORS = ProtocGenDescriptors.load();
+    private static final WasmModule PROTOC_GEN_GRPC_JAVA = ProtocGenGrpcJava.load();
 
     private String input;
     private boolean hasQuarkusKotlinDependency;
@@ -127,28 +146,118 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                     // proto file to the list of directories to include (it's a set, so no duplicate).
                     protoFiles.add(pathToProtoFile.toString());
                     protoDirs.add(pathToParentDir.toString());
-
                 }
             }
 
+            byte[] descriptor = null;
             if (!protoFiles.isEmpty()) {
                 Collection<String> protosToImport = gatherDirectoriesWithImports(workDir.resolve("protoc-dependencies"),
                         context);
 
-                PluginProtos.CodeGeneratorRequest.Builder req = PluginProtos.CodeGeneratorRequest.newBuilder();
+                // need to copy all the protos to import in the VFS
+                try (ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+                        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+                        FileSystem fs = ZeroFs.newFileSystem(
+                                Configuration.unix().toBuilder().setAttributeViews("unix").build())) {
 
-                req.addAllFileToGenerate(Arrays.asList("foo.proto", "bar.proto"));
+                    Path target = fs.getPath("/");
+
+                    var wasiOptsBuilder = WasiOptions.builder()
+                            .withStdout(stdout)
+                            .withStderr(stderr);
+
+                    List<String> command = new ArrayList<>();
+                    command.add("protoc-gen-descriptor");
+
+                    for (String protoDir : protoDirs) {
+                        var dest = target.resolve(protoDir);
+                        Files.createDirectories(dest.getParent());
+                        com.dylibso.chicory.wasi.Files.copyDirectory(Path.of(protoDir), dest);
+                        command.add(String.format("-I=%s", escapeWhitespace(protoDir)));
+                        wasiOptsBuilder.withDirectory(dest.toString(), dest);
+                    }
+                    for (String protoImportDir : protosToImport) {
+                        var dest = target.resolve(protoImportDir);
+                        Files.createDirectories(dest.getParent());
+                        com.dylibso.chicory.wasi.Files.copyDirectory(Path.of(protoImportDir), dest);
+                        command.add(String.format("-I=%s", escapeWhitespace(protoImportDir)));
+                        wasiOptsBuilder.withDirectory(dest.toString(), dest);
+                    }
+
+                    for (String protoFile : protoFiles) {
+                        var dest = target.resolve(protoFile);
+                        Files.createDirectories(dest.getParent());
+                        try (InputStream is = Files.newInputStream(Path.of(protoFile))) {
+                            Files.copy(is, dest, StandardCopyOption.REPLACE_EXISTING);
+                        }
+                        command.add(escapeWhitespace(protoFile));
+                        wasiOptsBuilder.withDirectory(dest.getParent().toString(), dest.getParent());
+                    }
+
+                    var wasiOpts = wasiOptsBuilder
+                            .withArguments(command)
+                            .withDirectory(target.toString(), target)
+                            .build();
+                    var wasi = WasiPreview1.builder().withOptions(wasiOpts).build();
+                    var imports = ImportValues.builder()
+                            .addFunction(wasi.toHostFunctions())
+                            .addMemory(
+                                    new ImportMemory(
+                                            "env",
+                                            "memory",
+                                            new ByteArrayMemory(
+                                                    new MemoryLimits(3, MemoryLimits.MAX_PAGES, true))))
+                            .build();
+
+                    try {
+                        Instance
+                                .builder(PROTOC_GEN_DESCRIPTORS)
+                                .withImportValues(imports)
+                                .withMachineFactory(ProtocGenDescriptors::create)
+                                .build();
+                    } catch (WasiExitException exit) {
+                        System.out.println(stdout);
+                        System.err.println(stderr);
+                        if (exit.exitCode() != 0) {
+                            throw new RuntimeException("Error running protoc-gen-descriptors: " + exit.exitCode());
+                        } else {
+                            descriptor = stdout.toByteArray();
+                        }
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException("Failure in file access " + e);
+                }
+
+                log.error("DEBUG - NOW I SHOULD HAVE THE DESCRIPTOR");
+
+                // Load the descriptor set
+                DescriptorProtos.FileDescriptorSet descriptorSet = DescriptorProtos.FileDescriptorSet.parseFrom(descriptor);
+
+                log.error("DEBUG - NEED TO INVOKE GRPC-GEN-JAVA");
+
+                if (true) {
+                    throw new IllegalArgumentException("stopping here now");
+                }
+
+                log.error("DEBUG - NEED TO INVOKE MUTINY GEN");
+
+                // Initialize the CodeGeneratorRequest.Builder
+                PluginProtos.CodeGeneratorRequest.Builder requestBuilder = PluginProtos.CodeGeneratorRequest.newBuilder()
+                        .setParameter("out=/out") // Specify the output directory
+                        // TODO: this is not correct
+                        .addFileToGenerate("helloworld.proto"); // Specify the file to generate
+
+                // Add all FileDescriptorProto entries from the descriptor set
+                for (DescriptorProtos.FileDescriptorProto fileDescriptor : descriptorSet.getFileList()) {
+                    requestBuilder.addProtoFile(fileDescriptor);
+                }
+
+                PluginProtos.CodeGeneratorRequest codeGeneratorRequest = requestBuilder.build();
 
                 //                for (File protoFile : protoFiles) {
                 //                    DescriptorProtos.FileDescriptorProto fdp = parseProto(protoFile);
                 //                    req.addProtoFile(fdp);
                 //                }
-
-                //                req.setCompilerVersion(Version.newBuilder()
-                //                        .setMajor(3).setMinor(25).setPatch(0).build());
-
-                // optional: pass "grpc_out=<outDir>" as parameter or handle separately
-                req.setParameter("grpc_java_out=" + outDir);
 
                 List<String> command = new ArrayList<>();
                 command.add("protoc");
@@ -391,7 +500,7 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                                     if (isDependency) {
                                         copySanitizedProtoFile(artifact, path, outPath);
                                     } else {
-                                        Files.copy(path, outPath, StandardCopyOption.REPLACE_EXISTING);
+                                        copy(path, outPath, StandardCopyOption.REPLACE_EXISTING);
                                     }
                                     protoFiles.add(outPath);
                                 } catch (IOException e) {

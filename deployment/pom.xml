@@ -19,6 +19,15 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>com.dylibso.chicory</groupId>
+      <artifactId>wasi</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.roastedroot</groupId>
+      <artifactId>zerofs</artifactId>
+      <version>0.1.0</version>
+    </dependency>
+    <dependency>
       <groupId>com.github.javaparser</groupId>
       <artifactId>javaparser-core</artifactId>
       <version>3.26.4</version>
@@ -42,6 +51,34 @@
             </path>
           </annotationProcessorPaths>
         </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>com.dylibso.chicory</groupId>
+        <artifactId>chicory-compiler-maven-plugin</artifactId>
+        <version>${chicory.version}</version>
+        <executions>
+          <execution>
+            <id>protoc-gen-descriptors</id>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+            <configuration>
+              <name>io.grpc.quarkus.deployment.ProtocGenDescriptors</name>
+              <wasmFile>${project.basedir}/../wasm/protoc-gen-descriptors.wasm</wasmFile>
+            </configuration>
+          </execution>
+          <execution>
+            <id>protoc-gen-grpc-java</id>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+            <configuration>
+              <name>io.grpc.quarkus.deployment.ProtocGenGrpcJava</name>
+              <wasmFile>${project.basedir}/../wasm/protoc-gen-grpc-java.wasm</wasmFile>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
