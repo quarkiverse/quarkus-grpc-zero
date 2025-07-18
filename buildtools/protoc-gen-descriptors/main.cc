@@ -55,15 +55,9 @@ int main(int argc, char** argv) {
 
   google::protobuf::FileDescriptorSet fd_set;
   for (const auto& file : proto_files) {
-    // Read and print file contents to stderr
     std::ifstream proto_in(file);
     if (!proto_in) {
       std::cerr << "[ERROR] Could not open proto file: '" << file << "'" << std::endl;
-    } else {
-      std::string line;
-      while (std::getline(proto_in, line)) {
-        // std::cerr << line << std::endl; // Removed debug logging
-      }
     }
     const google::protobuf::FileDescriptor* fd = importer.Import(file.c_str());
     if (!fd) {
