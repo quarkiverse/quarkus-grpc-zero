@@ -328,7 +328,15 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                     }
 
                     log.info("Running MutinyGrpcGenerator plugin");
-                    new MutinyGrpcGenerator().generateFiles(codeGeneratorRequest);
+                    List<PluginProtos.CodeGeneratorResponse.File> responseFileList = new MutinyGrpcGenerator()
+                            .generateFiles(codeGeneratorRequest);
+
+                    for (PluginProtos.CodeGeneratorResponse.File file : responseFileList) {
+                        Path outputPath = outDir.resolve(file.getName());
+                        Files.createDirectories(outputPath.getParent());
+                        log.info("grpc file generated: " + outputPath);
+                        Files.writeString(outputPath, file.getContent());
+                    }
                     // TODO: run also something else?
 
                     postprocessing(context, outDir);

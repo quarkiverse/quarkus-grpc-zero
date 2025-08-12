@@ -27,6 +27,13 @@
             <artifactId>quarkus-grpc-zero</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <!-- uncomment ONLY to compare the output!!! -->
+        <!-- <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc</artifactId>
+        </dependency> -->
+
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
