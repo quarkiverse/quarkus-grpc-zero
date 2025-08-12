@@ -30,6 +30,7 @@ int main(int argc, char** argv) {
 
       for (int i = 2; i < argc; ++i) {
         std::string arg = argv[i];
+        std::cerr << "[DEBUG] parsing argument " << arg << std::endl;
         // -I=PATH            Add include path
         if (arg.rfind("-I=", 0) == 0) {
           std::string path = arg.substr(3);
