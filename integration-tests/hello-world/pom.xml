@@ -10,7 +10,8 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>grpc-plain-text-quickstart</artifactId>
+    <artifactId>grpc-zero-integration-tests-hello-world</artifactId>
+    <name>Quarkus Grpc Zero - Integration Test - Hello World</name>
 
     <properties>
         <assertj.version>3.22.0</assertj.version>
@@ -23,15 +24,36 @@
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.grpc.zero</groupId>
-            <!-- <groupId>io.quarkus</groupId> -->
-            <!-- <artifactId>quarkus-grpc</artifactId> -->
             <artifactId>quarkus-grpc-zero</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-grpc</artifactId>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-stub</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc-api</artifactId>
+        </dependency>
+
+        <!-- TODO: fix the classpath in runtime module -->
+        <!-- <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-stub</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java-util</artifactId>
+        </dependency> -->
+
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>

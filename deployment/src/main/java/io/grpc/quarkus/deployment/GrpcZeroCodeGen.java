@@ -26,7 +26,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
@@ -46,6 +45,7 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.deployment.CodeGenContext;
 import io.quarkus.deployment.CodeGenProvider;
+import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathFilter;
 import io.quarkus.runtime.util.HashUtil;
@@ -159,7 +159,7 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                         "env",
                         "memory",
                         new ByteArrayMemory(
-                                new MemoryLimits(6, MemoryLimits.MAX_PAGES, true)));
+                                new MemoryLimits(10, MemoryLimits.MAX_PAGES, true)));
 
                 try (FileSystem fs = ZeroFs.newFileSystem(
                         Configuration.unix().toBuilder().setAttributeViews("unix").build())) {
@@ -265,6 +265,7 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                     // protoc based plugins
                     List<String> availablePlugins = new ArrayList<>();
                     availablePlugins.add("java");
+                    availablePlugins.add("grpc-java");
                     if (shouldGenerateKotlin(context.config())) {
                         availablePlugins.add("kotlin");
                     }
@@ -326,16 +327,9 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                         }
                     }
 
-                    // TODO: integrate also the Kotlin generator
-                    //                if (shouldGenerateKotlin(context.config())) {
-                    //                    command.add("--kotlin_out=" + outDir);
-                    //                }
-
-                    // TODO: Integrate MutinyGrpcGenerator
-                    // log.debugf("Generating using the MutinyGrpcGenerator");
-                    // new MutinyGrpcGenerator().generateFiles()
                     log.info("Running MutinyGrpcGenerator plugin");
                     new MutinyGrpcGenerator().generateFiles(codeGeneratorRequest);
+                    // TODO: run also something else?
 
                     postprocessing(context, outDir);
                     log.info("Successfully finished generating and post-processing sources from proto files");
