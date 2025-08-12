@@ -10,6 +10,7 @@
 #include <google/protobuf/compiler/importer.h>
 #include <google/protobuf/compiler/plugin.h>
 #include <google/protobuf/compiler/java/generator.h>
+#include <google/protobuf/compiler/kotlin/generator.h>
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -77,9 +78,26 @@ int main(int argc, char** argv) {
       // Write to stdout
       fd_set.SerializeToOstream(&std::cout);
       return 0;
-    } 
-    else if (option == "grpc-java") {
+    }
+    else if (option == "java") {
       google::protobuf::compiler::java::JavaGenerator generator;
+      #ifdef GOOGLE_PROTOBUF_RUNTIME_INCLUDE_BASE
+        generator.set_opensource_runtime(true);
+        generator.set_runtime_include_base(GOOGLE_PROTOBUF_RUNTIME_INCLUDE_BASE);
+      #endif
+      
+      std::vector<char*> plugin_args;
+      plugin_args.push_back(const_cast<char*>("protoc-gen-java"));
+      
+      for (int i = 2; i < argc; ++i) {
+        plugin_args.push_back(argv[i]);
+      }
+      
+      return google::protobuf::compiler::PluginMain(plugin_args.size(), plugin_args.data(), &generator);
+    }
+    else if (option == "grpc-java") {
+      // For gRPC Java, we use the JavaGrpcGenerator from the gRPC Java plugin
+      JavaGrpcGenerator generator;
       #ifdef GOOGLE_PROTOBUF_RUNTIME_INCLUDE_BASE
         generator.set_opensource_runtime(true);
         generator.set_runtime_include_base(GOOGLE_PROTOBUF_RUNTIME_INCLUDE_BASE);
@@ -93,7 +111,24 @@ int main(int argc, char** argv) {
       }
       
       return google::protobuf::compiler::PluginMain(plugin_args.size(), plugin_args.data(), &generator);
-    } 
+    }
+    else if (option == "grpc-kotlin") {
+      google::protobuf::compiler::kotlin::KotlinGenerator generator;
+
+            #ifdef GOOGLE_PROTOBUF_RUNTIME_INCLUDE_BASE
+        generator.set_opensource_runtime(true);
+        generator.set_runtime_include_base(GOOGLE_PROTOBUF_RUNTIME_INCLUDE_BASE);
+      #endif
+      
+      std::vector<char*> plugin_args;
+      plugin_args.push_back(const_cast<char*>("protoc-gen-grpc-kotlin"));
+      
+      for (int i = 2; i < argc; ++i) {
+        plugin_args.push_back(argv[i]);
+      }
+      
+      return google::protobuf::compiler::PluginMain(plugin_args.size(), plugin_args.data(), &generator);
+    }
     else {
         std::cerr << "Unknown option: " << option << "\n";
         return 1;

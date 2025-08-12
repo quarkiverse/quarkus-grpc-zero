@@ -57,6 +57,7 @@
       </activation>
       <modules>
         <module>hello-world</module>
+        <module>hello-world-kotlin</module>
       </modules>
     </profile>
     <profile>
