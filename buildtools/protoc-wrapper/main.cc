@@ -86,7 +86,6 @@ class JavaGrpcGenerator : public google::protobuf::compiler::CodeGenerator {
 #include <google/protobuf/compiler/importer.h>
 #include <google/protobuf/compiler/plugin.h>
 #include <google/protobuf/compiler/java/generator.h>
-#include <google/protobuf/compiler/kotlin/generator.h>
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -180,23 +179,6 @@ int main(int argc, char** argv) {
       
       std::vector<char*> plugin_args;
       plugin_args.push_back(const_cast<char*>("protoc-gen-grpc-java"));
-      
-      for (int i = 2; i < argc; ++i) {
-        plugin_args.push_back(argv[i]);
-      }
-      
-      return google::protobuf::compiler::PluginMain(plugin_args.size(), plugin_args.data(), &generator);
-    }
-    else if (option == "kotlin") {
-      google::protobuf::compiler::kotlin::KotlinGenerator generator;
-
-            #ifdef GOOGLE_PROTOBUF_RUNTIME_INCLUDE_BASE
-        generator.set_opensource_runtime(true);
-        generator.set_runtime_include_base(GOOGLE_PROTOBUF_RUNTIME_INCLUDE_BASE);
-      #endif
-      
-      std::vector<char*> plugin_args;
-      plugin_args.push_back(const_cast<char*>("protoc-gen-grpc-kotlin"));
       
       for (int i = 2; i < argc; ++i) {
         plugin_args.push_back(argv[i]);

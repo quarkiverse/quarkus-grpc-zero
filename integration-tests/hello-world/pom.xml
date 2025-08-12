@@ -28,38 +28,11 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- uncomment ONLY to compare the output!!! -->
-        <!-- <dependency>
+        <!-- HACK: I need the classpath and generation is disabled by GrpcZero -->
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-grpc</artifactId>
-        </dependency> -->
-
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-stub</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-grpc-api</artifactId>
-        </dependency>
-
-        <!-- TODO: fix the classpath in runtime module -->
-        <!-- <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-grpc-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-stub</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java-util</artifactId>
-        </dependency> -->
 
         <dependency>
             <groupId>io.quarkus</groupId>

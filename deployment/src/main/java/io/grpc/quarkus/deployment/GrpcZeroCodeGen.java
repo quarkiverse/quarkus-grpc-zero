@@ -112,9 +112,17 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
 
     @Override
     public boolean trigger(CodeGenContext context) throws CodeGenException {
-        if (TRUE.toString().equalsIgnoreCase(System.getProperties().getProperty("grpc.codegen.skip", "false"))
-                || context.config().getOptionalValue("quarkus.grpc.codegen.skip", Boolean.class).orElse(false)) {
-            log.info("Skipping gRPC code generation on user's request");
+        // TODO: fixme changing the skip property to re-use the rest of the grpc dependencies etc.
+        // restore to the original when/if merging
+        // HACK -> verify why it doesn't work from application.properties
+        System.getProperties().setProperty("grpc.codegen.skip", "true");
+        log.error("DEBUG codegen: " + System.getProperties().getProperty("grpc.codegen.skip") + " - "
+                + TRUE.toString().equalsIgnoreCase(System.getProperties().getProperty("grpc.codegen.skip", "false")));
+        log.error("DEBUG codegen zero: " + System.getProperties().getProperty("grpc.zero.codegen.skip") + " - "
+                + TRUE.toString().equalsIgnoreCase(System.getProperties().getProperty("grpc.zero.codegen.skip", "false")));
+        if (TRUE.toString().equalsIgnoreCase(System.getProperties().getProperty("grpc.zero.codegen.skip", "false"))
+                || context.config().getOptionalValue("quarkus.zero.grpc.codegen.skip", Boolean.class).orElse(false)) {
+            log.info("Skipping gRPC zero code generation on user's request");
             return false;
         }
         Path outDir = context.outDir();
@@ -267,7 +275,10 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                     availablePlugins.add("java");
                     availablePlugins.add("grpc-java");
                     if (shouldGenerateKotlin(context.config())) {
-                        availablePlugins.add("kotlin");
+                        // availablePlugins.add("kotlin");
+                        // TODO: missing grpc-kotlin
+                        // https://github.com/grpc/grpc-kotlin/blob/master/compiler/src/main/java/io/grpc/kotlin/generator/GeneratorRunner.kt
+                        // schould be similar to Mutiny
                     }
 
                     for (String grpcPlugin : availablePlugins) {

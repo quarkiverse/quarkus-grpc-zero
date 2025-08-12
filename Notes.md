@@ -9,4 +9,5 @@ Next:
 - fix the runtime module classpath it doesn't include all the required libraries
 - compiling a protoc version different from the one used, currently, by Quarkus - cannot compile the result - check what to do
 - port all of the quarkus/integration-tests/grpc-*** tests
+- hello-world-kotlin is not testing Kotlin but just the java generation - fix it using kotlin grpc
 - test on real world use cases
