@@ -1,0 +1,72 @@
+diff --git a/upb/json/decode.c b/upb/json/decode.c
+index 0f25c4bf1..beb604fd1 100644
+--- a/upb/json/decode.c
++++ b/upb/json/decode.c
+@@ -12,7 +12,6 @@
+ #include <inttypes.h>
+ #include <limits.h>
+ #include <math.h>
+-#include <setjmp.h>
+ #include <stdarg.h>
+ #include <stddef.h>
+ #include <stdint.h>
+diff --git a/upb/port/def.inc b/upb/port/def.inc
+index a46ca2390..cdf314c3e 100644
+--- a/upb/port/def.inc
++++ b/upb/port/def.inc
+@@ -70,7 +70,6 @@
+ #endif
+ 
+ #include <assert.h>
+-#include <setjmp.h>
+ #include <stdbool.h>
+ #include <stdint.h>
+ #include <stdio.h>
+@@ -304,8 +303,9 @@ Error, UINTPTR_MAX is undefined
+ #define UPB_SETJMP(buf) 0
+ #define UPB_LONGJMP(buf, val) abort()
+ #else
+-#define UPB_SETJMP(buf) setjmp(buf)
+-#define UPB_LONGJMP(buf, val) longjmp(buf, val)
++typedef void* jmp_buf;
++#define UPB_SETJMP(buf) 0
++#define UPB_LONGJMP(buf, val) 0
+ #endif
+ 
+ #if ((__STDC_VERSION__ >= 201112L) && !defined(__STDC_NO_ATOMICS__)) || \
+diff --git a/upb/reflection/internal/def_builder.h b/upb/reflection/internal/def_builder.h
+index 889f61aa9..a06588017 100644
+--- a/upb/reflection/internal/def_builder.h
++++ b/upb/reflection/internal/def_builder.h
+@@ -8,7 +8,6 @@
+ #ifndef UPB_REFLECTION_DEF_BUILDER_INTERNAL_H_
+ #define UPB_REFLECTION_DEF_BUILDER_INTERNAL_H_
+ 
+-#include <setjmp.h>
+ #include <stddef.h>
+ #include <stdint.h>
+ #include <string.h>
+diff --git a/upb/util/required_fields.c b/upb/util/required_fields.c
+index c3723863c..b453cd151 100644
+--- a/upb/util/required_fields.c
++++ b/upb/util/required_fields.c
+@@ -9,7 +9,6 @@
+ 
+ #include <assert.h>
+ #include <inttypes.h>
+-#include <setjmp.h>
+ #include <stdarg.h>
+ #include <stdbool.h>
+ #include <stddef.h>
+diff --git a/upb/wire/encode.c b/upb/wire/encode.c
+index 1165fe587..effd28d1b 100644
+--- a/upb/wire/encode.c
++++ b/upb/wire/encode.c
+@@ -9,7 +9,6 @@
+ 
+ #include "upb/wire/encode.h"
+ 
+-#include <setjmp.h>
+ #include <stdbool.h>
+ #include <stdint.h>
+ #include <stdlib.h>
