@@ -11,11 +11,7 @@
     </parent>
 
     <artifactId>grpc-zero-integration-test-grpc-vertx</artifactId>
-    <name>GrpcZero - Integration Tests - gRPC - Vertx</name>
-
-    <properties>
-        <assertj.version>3.22.0</assertj.version>
-    </properties>
+    <name>Quarkus Grpc Zero - Integration Tests - gRPC - Vertx</name>
 
     <dependencies>
         <dependency>

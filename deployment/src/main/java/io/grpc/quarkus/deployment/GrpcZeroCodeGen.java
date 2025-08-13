@@ -263,12 +263,6 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                     List<String> availablePlugins = new ArrayList<>();
                     availablePlugins.add("java");
                     availablePlugins.add("grpc-java");
-                    if (shouldGenerateKotlin(context.config())) {
-                        // availablePlugins.add("kotlin");
-                        // TODO: missing grpc-kotlin
-                        // https://github.com/grpc/grpc-kotlin/blob/master/compiler/src/main/java/io/grpc/kotlin/generator/GeneratorRunner.kt
-                        // schould be similar to Mutiny
-                    }
 
                     for (String grpcPlugin : availablePlugins) {
                         log.info("Running grpc plugin " + grpcPlugin);
