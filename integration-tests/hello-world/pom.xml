@@ -10,7 +10,8 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>grpc-plain-text-quickstart</artifactId>
+    <artifactId>grpc-zero-integration-tests-hello-world</artifactId>
+    <name>Quarkus Grpc Zero - Integration Test - Hello World</name>
 
     <properties>
         <assertj.version>3.22.0</assertj.version>
@@ -23,15 +24,16 @@
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.grpc.zero</groupId>
-            <!-- <groupId>io.quarkus</groupId> -->
-            <!-- <artifactId>quarkus-grpc</artifactId> -->
             <artifactId>quarkus-grpc-zero</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <!-- HACK: I need the classpath and generation is disabled by GrpcZero -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-grpc</artifactId>
         </dependency>
+
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>

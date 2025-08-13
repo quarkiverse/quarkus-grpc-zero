@@ -57,21 +57,7 @@
       </activation>
       <modules>
         <module>hello-world</module>
-      </modules>
-    </profile>
-    <profile>
-      <id>windows</id>
-      <activation>
-        <os>
-          <family>Windows</family>
-        </os>
-      </activation>
-      <modules>
-        <module>000</module>
-        <module>basic-jdk</module>
-        <module>basic-vertx</module>
-        <module>auth-vertx</module>
-        <module>rename</module>
+        <module>hello-world-kotlin</module>
       </modules>
     </profile>
     <profile>
