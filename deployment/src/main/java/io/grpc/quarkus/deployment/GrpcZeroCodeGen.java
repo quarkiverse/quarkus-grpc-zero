@@ -9,9 +9,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileSystem;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -167,21 +174,19 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
 
                 try (FileSystem fs = ZeroFs.newFileSystem(
                         Configuration.unix().toBuilder().setAttributeViews("unix").build())) {
+                    var workdir = fs.getPath(".");
                     for (String protoDir : protoDirs) {
-                        var dest = fs.getPath(protoDir);
-                        Files.createDirectories(dest.getParent());
-                        com.dylibso.chicory.wasi.Files.copyDirectory(Path.of(protoDir), dest);
+                        copyDirectory(Path.of(protoDir), workdir);
                     }
                     for (String protoImportDir : protosToImport) {
-                        var dest = fs.getPath(protoImportDir);
-                        Files.createDirectories(dest.getParent());
-                        com.dylibso.chicory.wasi.Files.copyDirectory(Path.of(protoImportDir), dest);
+                        copyDirectory(Path.of(protoImportDir), workdir);
                     }
 
                     // trusting the protoFile folder is already included
                     for (String protoFile : protoFiles) {
                         try (InputStream is = Files.newInputStream(Path.of(protoFile))) {
-                            Files.copy(is, fs.getPath(Path.of(protoFile).toString()), StandardCopyOption.REPLACE_EXISTING);
+                            Files.copy(is, workdir.resolve(Path.of(protoFile).getFileName().toString()),
+                                    StandardCopyOption.REPLACE_EXISTING);
                         }
                     }
 
@@ -197,31 +202,18 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                         command.add("protoc-wrapper");
                         command.add("descriptors");
 
-                        for (String protoDir : protoDirs) {
-                            var dest = fs.getPath(protoDir);
-                            command.add(String.format("-I=%s", escapeWhitespace(protoDir)));
-                            wasiOptsBuilder.withDirectory(dest.toString(), dest);
-                        }
-                        for (String protoImportDir : protosToImport) {
-                            var dest = fs.getPath(protoImportDir);
-                            command.add(String.format("-I=%s", escapeWhitespace(protoImportDir)));
-                            wasiOptsBuilder.withDirectory(dest.toString(), dest);
-                        }
-
                         // trusting the protoFile folder is already included
                         for (String protoFile : protoFiles) {
-                            try (InputStream is = Files.newInputStream(Path.of(protoFile))) {
-                                Files.copy(is, fs.getPath(Path.of(protoFile).toString()), StandardCopyOption.REPLACE_EXISTING);
-                            }
                             if (protoFile.startsWith("/")) {
                                 protoFile = protoFile.replaceFirst("/", "");
                             }
-                            log.debug("adding proto file: " + Path.of(protoFile).getFileName().toString());
+                            log.debug("adding proto file: " + workdir.resolve(Path.of(protoFile).getFileName().toString()));
                             command.add(Path.of(protoFile).getFileName().toString());
                         }
 
                         var wasiOpts = wasiOptsBuilder
                                 .withArguments(command)
+                                .withDirectory(workdir.toString(), workdir)
                                 .build();
                         try (var wasi = WasiPreview1.builder().withOptions(wasiOpts).build()) {
                             var imports = ImportValues.builder()
@@ -287,21 +279,10 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                                     .withStdout(stdout)
                                     .withStderr(stderr);
 
-                            Path target = fs.getPath("/");
-
-                            for (String protoDir : protoDirs) {
-                                var dest = fs.getPath(protoDir);
-                                wasiOptsBuilder.withDirectory(dest.toString(), dest);
-                            }
-                            for (String protoImportDir : protosToImport) {
-                                var dest = fs.getPath(protoImportDir);
-                                wasiOptsBuilder.withDirectory(dest.toString(), dest);
-                            }
-
                             var wasiOpts = wasiOptsBuilder
                                     .withStdin(new ByteArrayInputStream(codeGeneratorRequest.toByteArray()))
                                     .withArguments(List.of("protoc-wrapper", grpcPlugin))
-                                    .withDirectory(target.toString(), target)
+                                    .withDirectory(workdir.toString(), workdir)
                                     .build();
                             try (var wasi = WasiPreview1.builder().withOptions(wasiOpts).build()) {
                                 memory.memory().zero();
@@ -382,6 +363,40 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
         }
 
         return false;
+    }
+
+    public static void copyDirectory(final Path source, final Path target) throws IOException {
+        java.nio.file.Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                if (java.nio.file.Files.isSymbolicLink(dir)) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                } else {
+                    Path directory = target.resolve(source.relativize(dir).toString());
+                    if (!directory.toString().equals("/")) {
+                        FileAttribute<?>[] attributes = new FileAttribute[0];
+                        PosixFileAttributeView attributeView = (PosixFileAttributeView) java.nio.file.Files
+                                .getFileAttributeView(dir, PosixFileAttributeView.class);
+                        if (attributeView != null) {
+                            Set<PosixFilePermission> permissions = attributeView.readAttributes().permissions();
+                            FileAttribute<Set<PosixFilePermission>> attribute = PosixFilePermissions
+                                    .asFileAttribute(permissions);
+                            attributes = new FileAttribute[] { attribute };
+                        }
+
+                        java.nio.file.Files.createDirectories(directory, attributes);
+                    }
+
+                    return FileVisitResult.CONTINUE;
+                }
+            }
+
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                String relative = source.relativize(file).toString().replace("\\", "/");
+                Path path = target.resolve(relative);
+                java.nio.file.Files.copy(file, path, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 
     private static void copySanitizedProtoFile(ResolvedDependency artifact, Path protoPath, Path outProtoPath)
