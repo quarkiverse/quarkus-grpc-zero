@@ -32,6 +32,21 @@
       <artifactId>javaparser-core</artifactId>
       <version>3.26.4</version>
     </dependency>
+
+    <!-- Mutiny generator -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-grpc-protoc-plugin</artifactId>
+      <version>${quarkus.version}</version>
+    </dependency>
+    <!-- Kotlin generator -->
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>protoc-gen-grpc-kotlin</artifactId>
+      <version>1.4.1</version>
+      <classifier>jdk8</classifier>
+    </dependency>
+
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-junit5-internal</artifactId>

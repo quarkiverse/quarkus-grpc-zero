@@ -41,6 +41,7 @@ import com.dylibso.chicory.wasm.types.MemoryLimits;
 import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.compiler.PluginProtos;
 
+import io.grpc.kotlin.generator.GeneratorRunner;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.deployment.CodeGenContext;
@@ -112,14 +113,9 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
 
     @Override
     public boolean trigger(CodeGenContext context) throws CodeGenException {
-        // TODO: fixme changing the skip property to re-use the rest of the grpc dependencies etc.
-        // restore to the original when/if merging
+        // FIXME: application.properties is not picked up?
         // HACK -> verify why it doesn't work from application.properties
         System.getProperties().setProperty("grpc.codegen.skip", "true");
-        log.error("DEBUG codegen: " + System.getProperties().getProperty("grpc.codegen.skip") + " - "
-                + TRUE.toString().equalsIgnoreCase(System.getProperties().getProperty("grpc.codegen.skip", "false")));
-        log.error("DEBUG codegen zero: " + System.getProperties().getProperty("grpc.zero.codegen.skip") + " - "
-                + TRUE.toString().equalsIgnoreCase(System.getProperties().getProperty("grpc.zero.codegen.skip", "false")));
         if (TRUE.toString().equalsIgnoreCase(System.getProperties().getProperty("grpc.zero.codegen.skip", "false"))
                 || context.config().getOptionalValue("quarkus.zero.grpc.codegen.skip", Boolean.class).orElse(false)) {
             log.info("Skipping gRPC zero code generation on user's request");
@@ -268,7 +264,8 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                         requestBuilder.addProtoFile(fileDescriptor);
                     }
 
-                    PluginProtos.CodeGeneratorRequest codeGeneratorRequest = requestBuilder.build();
+                    PluginProtos.CodeGeneratorRequest codeGeneratorRequest = requestBuilder
+                            .build();
 
                     // protoc based plugins
                     List<String> availablePlugins = new ArrayList<>();
@@ -339,22 +336,42 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                     }
 
                     log.info("Running MutinyGrpcGenerator plugin");
-                    List<PluginProtos.CodeGeneratorResponse.File> responseFileList = new MutinyGrpcGenerator()
+                    List<PluginProtos.CodeGeneratorResponse.File> mutinyResponse = new MutinyGrpcGenerator()
                             .generateFiles(codeGeneratorRequest);
 
-                    for (PluginProtos.CodeGeneratorResponse.File file : responseFileList) {
+                    for (PluginProtos.CodeGeneratorResponse.File file : mutinyResponse) {
                         Path outputPath = outDir.resolve(file.getName());
                         Files.createDirectories(outputPath.getParent());
                         log.info("grpc file generated: " + outputPath);
                         Files.writeString(outputPath, file.getContent());
                     }
-                    // TODO: run also something else?
+
+                    if (shouldGenerateKotlin(context.config())) {
+                        log.info("Running KotlinGenerator plugin");
+                        ByteArrayInputStream input = new ByteArrayInputStream(codeGeneratorRequest.toByteArray());
+                        ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+                        GeneratorRunner.INSTANCE.mainAsProtocPlugin(input, output);
+
+                        var response = PluginProtos.CodeGeneratorResponse.parseFrom(output.toByteArray());
+
+                        for (PluginProtos.CodeGeneratorResponse.File file : response.getFileList()) {
+                            Path outputPath = outDir.resolve(file.getName());
+                            Files.createDirectories(outputPath.getParent());
+                            log.info("grpc file generated: " + outputPath);
+                            Files.writeString(outputPath, file.getContent());
+                        }
+                    }
+
+                    if (shouldGenerateDescriptorSet(context.config())) {
+                        // TODO: test me
+                        Files.write(getDescriptorSetOutputFile(context), descriptor);
+                    }
 
                     postprocessing(context, outDir);
                     log.info("Successfully finished generating and post-processing sources from proto files");
 
                     return true;
-
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

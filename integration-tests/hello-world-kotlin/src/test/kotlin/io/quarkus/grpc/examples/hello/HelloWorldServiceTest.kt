@@ -1,9 +1,8 @@
 package io.quarkus.grpc.examples.hello
 
-import examples.GreeterGrpc
+import examples.GreeterGrpcKt
 import examples.HelloReply
 import examples.HelloRequest
-import examples.MutinyGreeterGrpc
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import io.quarkus.test.junit.QuarkusTest
@@ -11,7 +10,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.time.Duration
 import java.util.concurrent.TimeUnit
 
 @QuarkusTest
@@ -32,17 +30,16 @@ class HelloWorldServiceTest {
     }
 
     @Test
-    fun testHelloWorldServiceUsingBlockingStub() {
-        val client = GreeterGrpc.newBlockingStub(channel)
+    suspend fun testHelloWorldServiceUsingBlockingStub() {
+        val client = GreeterGrpcKt.GreeterCoroutineStub(channel)
         val reply = client.sayHello(HelloRequest.newBuilder().setName("neo-blocking").build())
         assertThat(reply.message).isEqualTo("Hello neo-blocking")
     }
 
     @Test
-    fun testHelloWorldServiceUsingMutinyStub() {
-        val reply = MutinyGreeterGrpc.newMutinyStub(channel)
-            .sayHello(HelloRequest.newBuilder().setName("neo-blocking").build())
-            .await().atMost(Duration.ofSeconds(5))
-        assertThat(reply.message).isEqualTo("Hello neo-blocking")
+    suspend fun testHelloWorldServiceUsingMutinyStub() {
+        val client = GreeterGrpcKt.GreeterCoroutineStub(channel)
+        val reply = client.sayHello(HelloRequest.newBuilder().setName("neo-mutiny").build())
+        assertThat(reply.message).isEqualTo("Hello neo-mutiny")
     }
 } 
