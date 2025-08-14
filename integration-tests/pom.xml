@@ -83,7 +83,6 @@
         <module>grpc-cli</module>
         <module>grpc-inprocess</module>
         <module>grpc-descriptor-sets</module>
-        <module>opentelemetry-grpc-only</module>
       </modules>
     </profile>
     <profile>

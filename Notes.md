@@ -8,7 +8,7 @@ Next:
 - review and refactor the VFS handling(use only one?) -> DONE
 - the quarkus-grpc dependency is still pulling in the transitive dep on native protoc - can be solved while merging upstream - changed the skip flag - re-using the rest of the infra
 - compiling a protoc version different from the one used, currently, by Quarkus - aligned to the current version used by quarkus - DONE
-- port all of the quarkus/integration-tests/grpc-*** tests - missing grpc-external-proto-test only
+- port all of the quarkus/integration-tests/grpc-*** tests - missing grpc-external-proto-test only - local dependency doesn't work and need to compare codegenrequests - maybe improve the workflow for debugging this issue
 - hello-world-kotlin is not testing Kotlin but just the java generation - fixed - DONE
 - fix the runtime module classpath it doesn't include all the required libraries - worked around by disabling only generation from the quarkus-grpc dependency - fixed resolving recursively the dependencies - seems to work - DONE
 - better error handling when something goes wrong - a bit better now in cpp
