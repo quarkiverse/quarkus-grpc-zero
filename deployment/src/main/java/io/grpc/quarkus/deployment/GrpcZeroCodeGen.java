@@ -40,6 +40,7 @@ import com.dylibso.chicory.runtime.ByteArrayMemory;
 import com.dylibso.chicory.runtime.ImportMemory;
 import com.dylibso.chicory.runtime.ImportValues;
 import com.dylibso.chicory.runtime.Instance;
+import com.dylibso.chicory.runtime.TrapException;
 import com.dylibso.chicory.wasi.WasiExitException;
 import com.dylibso.chicory.wasi.WasiOptions;
 import com.dylibso.chicory.wasi.WasiPreview1;
@@ -166,12 +167,6 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                 Collection<String> protosToImport = gatherDirectoriesWithImports(workDir.resolve("protoc-dependencies"),
                         context);
 
-                var memory = new ImportMemory(
-                        "env",
-                        "memory",
-                        new ByteArrayMemory(
-                                new MemoryLimits(10, MemoryLimits.MAX_PAGES, true)));
-
                 try (FileSystem fs = ZeroFs.newFileSystem(
                         Configuration.unix().toBuilder().setAttributeViews("unix").build())) {
                     var workdir = fs.getPath(".");
@@ -218,7 +213,7 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                         try (var wasi = WasiPreview1.builder().withOptions(wasiOpts).build()) {
                             var imports = ImportValues.builder()
                                     .addFunction(wasi.toHostFunctions())
-                                    .addMemory(memory)
+                                    .addMemory(getDefaultMemory())
                                     .build();
 
                             log.debug("protoc command: " + command.stream().collect(Collectors.joining(" ")));
@@ -251,13 +246,10 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                     }
 
                     // Add all FileDescriptorProto entries from the descriptor set
-                    for (DescriptorProtos.FileDescriptorProto fileDescriptor : descriptorSet.getFileList()) {
-                        log.info("adding descriptor: " + fileDescriptor.getName());
-                        requestBuilder.addProtoFile(fileDescriptor);
-                    }
+                    // and all from dependencies
+                    resolveDependencies(workdir, descriptorSet, requestBuilder);
 
-                    PluginProtos.CodeGeneratorRequest codeGeneratorRequest = requestBuilder
-                            .build();
+                    PluginProtos.CodeGeneratorRequest codeGeneratorRequest = requestBuilder.build();
 
                     // protoc based plugins
                     List<String> availablePlugins = new ArrayList<>();
@@ -279,11 +271,9 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                                     .withDirectory(workdir.toString(), workdir)
                                     .build();
                             try (var wasi = WasiPreview1.builder().withOptions(wasiOpts).build()) {
-                                memory.memory().zero();
-
                                 var imports = ImportValues.builder()
                                         .addFunction(wasi.toHostFunctions())
-                                        .addMemory(memory)
+                                        .addMemory(getDefaultMemory())
                                         .build();
 
                                 Instance.builder(PROTOC_WRAPPER)
@@ -359,6 +349,30 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
         return false;
     }
 
+    private static ImportMemory getDefaultMemory() {
+        return new ImportMemory(
+                "env",
+                "memory",
+                new ByteArrayMemory(
+                        new MemoryLimits(10, MemoryLimits.MAX_PAGES, true)));
+    }
+
+    // TODO: this might be expensive, we should probably push the logic down to cpp
+    private static void resolveDependencies(Path workdir,
+            DescriptorProtos.FileDescriptorSet descriptorSet, PluginProtos.CodeGeneratorRequest.Builder requestBuilder)
+            throws CodeGenException {
+        for (DescriptorProtos.FileDescriptorProto fileDescriptor : descriptorSet.getFileList()) {
+            log.info("adding descriptor: " + fileDescriptor.getName());
+            for (String dep : fileDescriptor.getDependencyList()) {
+                log.info("Getting dependency descriptor for: " + dep);
+                var depFdSet = getDescriptor(workdir, dep);
+                resolveDependencies(workdir, depFdSet, requestBuilder);
+            }
+            requestBuilder.addProtoFile(fileDescriptor);
+            requestBuilder.addSourceFileDescriptors(fileDescriptor);
+        }
+    }
+
     public static void copyDirectory(final Path source, final Path target) throws IOException {
         java.nio.file.Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
@@ -431,6 +445,56 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
 
         new GrpcZeroPostProcessing(context, outDir).postprocess();
 
+    }
+
+    private static DescriptorProtos.FileDescriptorSet getDescriptor(Path workdir, String fileName)
+            throws CodeGenException {
+        // need to copy all the protos to import in the VFS
+        try (ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+                ByteArrayOutputStream stderr = new ByteArrayOutputStream()) {
+            var wasiOptsBuilder = WasiOptions.builder()
+                    .withStdout(stdout)
+                    .withStderr(stderr);
+
+            List<String> command = new ArrayList<>();
+            command.add("protoc-wrapper");
+            command.add("descriptors");
+
+            command.add(fileName);
+
+            var wasiOpts = wasiOptsBuilder
+                    .withArguments(command)
+                    .withDirectory(workdir.toString(), workdir)
+                    .build();
+            try (var wasi = WasiPreview1.builder().withOptions(wasiOpts).build()) {
+                var imports = ImportValues.builder()
+                        .addFunction(wasi.toHostFunctions())
+                        .addMemory(getDefaultMemory())
+                        .build();
+
+                log.debug("protoc command: " + command.stream().collect(Collectors.joining(" ")));
+                Instance
+                        .builder(PROTOC_WRAPPER)
+                        .withImportValues(imports)
+                        .withMachineFactory(ProtocWrapper::create)
+                        .build();
+            } catch (TrapException trap) {
+                System.out.println(stdout);
+                System.err.println(stderr);
+                throw new CodeGenException("Error running protoc-wrapper, trapped");
+            } catch (WasiExitException exit) {
+                System.out.println(stdout);
+                System.err.println(stderr);
+                if (exit.exitCode() != 0) {
+                    throw new CodeGenException("Error running protoc-wrapper: " + exit.exitCode());
+                }
+            }
+            return DescriptorProtos.FileDescriptorSet.parseFrom(stdout.toByteArray());
+        } catch (IOException e) {
+            throw new CodeGenException(
+                    "Failed to generate java files from proto file " + fileName,
+                    e);
+        }
     }
 
     private Collection<Path> gatherProtosFromDependencies(Path workDir, Set<String> protoDirectories,
