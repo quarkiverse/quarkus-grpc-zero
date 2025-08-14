@@ -177,16 +177,13 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                     copyDirectory(Path.of(protoImportDir), workdir);
                 }
 
-                // trusting the protoFile folder is already included
+                List<String> protosToProcess = new ArrayList<>();
                 for (String protoFile : protoFiles) {
                     try (InputStream is = Files.newInputStream(Path.of(protoFile))) {
                         Files.copy(is, workdir.resolve(Path.of(protoFile).getFileName().toString()),
                                 StandardCopyOption.REPLACE_EXISTING);
                     }
-                }
 
-                List<String> protosToProcess = new ArrayList<>();
-                for (String protoFile : protoFiles) {
                     if (protoFile.startsWith("/")) {
                         protoFile = protoFile.replaceFirst("/", "");
                     }
