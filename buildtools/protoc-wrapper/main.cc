@@ -86,11 +86,35 @@ class JavaGrpcGenerator : public google::protobuf::compiler::CodeGenerator {
 #include <google/protobuf/compiler/importer.h>
 #include <google/protobuf/compiler/plugin.h>
 #include <google/protobuf/compiler/java/generator.h>
+
 #include <fstream>
 #include <iostream>
 #include <vector>
 #include <string>
 #include <cstring>
+
+// Simple error tracking for import failures
+class SimpleErrorTracker {
+private:
+    std::vector<std::string> errors_;
+    std::vector<std::string> warnings_;
+
+public:
+    void AddError(const std::string& filename, const std::string& message) {
+        std::string error = "Error in " + filename + " - " + message;
+        errors_.push_back(error);
+    }
+
+    void AddWarning(const std::string& filename, const std::string& message) {
+        std::string warning = "Warning in " + filename + " - " + message;
+        warnings_.push_back(warning);
+    }
+
+    const std::vector<std::string>& GetErrors() const { return errors_; }
+    const std::vector<std::string>& GetWarnings() const { return warnings_; }
+    bool HasErrors() const { return !errors_.empty(); }
+    void Clear() { errors_.clear(); warnings_.clear(); }
+};
 
 int main(int argc, char** argv) {
     if (argc < 2) {
@@ -119,18 +143,22 @@ int main(int argc, char** argv) {
         return 1;
       }
 
-      // Set up the importer
+      // Set up the importer with error collection
       google::protobuf::compiler::DiskSourceTree source_tree;
       
       // we copy all the files in the . workdir in Java
       // let see if this is the best approach or is better to respect the original folder tree like we did before
       source_tree.MapPath("", ".");
 
+      SimpleErrorTracker error_tracker;
       google::protobuf::compiler::Importer importer(&source_tree, nullptr);
 
       google::protobuf::FileDescriptorSet fd_set;
       
       for (const auto& file : proto_files) {
+        // Clear previous errors before processing each file
+        error_tracker.Clear();
+        
         std::ifstream proto_in(file);
         if (!proto_in) {
           std::cerr << "[ERROR] Could not open proto file: '" << file << "'" << std::endl;
@@ -138,6 +166,18 @@ int main(int argc, char** argv) {
         const google::protobuf::FileDescriptor* fd = importer.Import(file.c_str());
         if (!fd) {
           std::cerr << "[ERROR] Failed to import: '" << file << "'" << std::endl;
+          
+          // Add some basic error tracking
+          error_tracker.AddError(file, "Import failed - check syntax and dependencies");
+          
+          // Print error messages if available
+          if (error_tracker.HasErrors()) {
+            std::cerr << "[ERROR] Import errors:" << std::endl;
+            for (const auto& error : error_tracker.GetErrors()) {
+              std::cerr << "  " << error << std::endl;
+            }
+          }
+          
           return 1;
         }
         auto* proto = fd_set.add_file();
