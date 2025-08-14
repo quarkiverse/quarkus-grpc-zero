@@ -122,7 +122,8 @@ int main(int argc, char** argv) {
       // Set up the importer
       google::protobuf::compiler::DiskSourceTree source_tree;
       
-      // test
+      // we copy all the files in the . workdir in Java
+      // let see if this is the best approach or is better to respect the original folder tree like we did before
       source_tree.MapPath("", ".");
 
       google::protobuf::compiler::Importer importer(&source_tree, nullptr);
