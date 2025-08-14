@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>grpc-zero-integration-test-grpc-vertx</artifactId>
-    <name>GrpcZero - Integration Tests - gRPC - Vertx</name>
+    <name>Quarkus Grpc Zero - Integration Tests - gRPC - Vertx</name>
 
     <dependencies>
         <dependency>
@@ -21,6 +21,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-mutiny</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.grpc.zero</groupId>
@@ -45,12 +49,13 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
+            <version>${assertj.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-grpc</artifactId>
-            <version>${project.version}</version> <!--kept here to not pollute the BOM-->
+            <version>${quarkus.version}</version> <!--kept here to not pollute the BOM-->
             <scope>test</scope>
         </dependency>
 
@@ -58,7 +63,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-grpc-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -71,7 +76,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>
@@ -84,7 +89,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-mutiny-deployment</artifactId>
-            <version>${project.version}</version>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>test</scope>
             <exclusions>

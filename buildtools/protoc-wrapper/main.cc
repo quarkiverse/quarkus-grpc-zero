@@ -102,17 +102,12 @@ int main(int argc, char** argv) {
 
     if (option == "descriptors") {
       std::vector<std::string> proto_files;
-      std::vector<std::string> include_paths;
 
       for (int i = 2; i < argc; ++i) {
         std::string arg = argv[i];
         std::cerr << "[DEBUG] parsing argument " << arg << std::endl;
-        // -I=PATH            Add include path
-        if (arg.rfind("-I=", 0) == 0) {
-          std::string path = arg.substr(3);
-          include_paths.push_back(path);
         // plain proto files
-        } else if (!arg.empty() && arg[0] != '-') {
+        if (!arg.empty() && arg[0] != '-') {
           proto_files.push_back(arg);
         } else {
           std::cerr << "[WARN] Unknown argument detected " << arg << std::endl;
@@ -126,16 +121,15 @@ int main(int argc, char** argv) {
 
       // Set up the importer
       google::protobuf::compiler::DiskSourceTree source_tree;
-      if (include_paths.empty()) {
-        source_tree.MapPath("", ".");
-      } else {
-        for (const auto& path : include_paths) {
-          source_tree.MapPath("", path);
-        }
-      }
+      
+      // we copy all the files in the . workdir in Java
+      // let see if this is the best approach or is better to respect the original folder tree like we did before
+      source_tree.MapPath("", ".");
+
       google::protobuf::compiler::Importer importer(&source_tree, nullptr);
 
       google::protobuf::FileDescriptorSet fd_set;
+      
       for (const auto& file : proto_files) {
         std::ifstream proto_in(file);
         if (!proto_in) {

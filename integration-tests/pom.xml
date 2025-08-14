@@ -11,6 +11,7 @@
   <name>Quarkus Grpc Zero - Integration Tests - Parent</name>
   <properties>
     <skipITs>true</skipITs>
+    <assertj.version>3.22.0</assertj.version>
   </properties>
   <build>
     <plugins>
@@ -58,6 +59,7 @@
       <modules>
         <module>hello-world</module>
         <module>hello-world-kotlin</module>
+        <module>grpc-vertx</module>
       </modules>
     </profile>
     <profile>
