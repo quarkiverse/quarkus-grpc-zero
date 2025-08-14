@@ -128,6 +128,7 @@ int main(int argc, char** argv) {
       google::protobuf::compiler::Importer importer(&source_tree, nullptr);
 
       google::protobuf::FileDescriptorSet fd_set;
+      
       for (const auto& file : proto_files) {
         std::ifstream proto_in(file);
         if (!proto_in) {
@@ -140,32 +141,6 @@ int main(int argc, char** argv) {
         }
         auto* proto = fd_set.add_file();
         fd->CopyTo(proto);
-      }
-
-      std::set<std::string> processed_files;
-      std::queue<const google::protobuf::FileDescriptor*> to_process;
-
-      to_process.push(fd);
-      processed_files.insert(fd->name());
-
-      while (!to_process.empty()) {
-          const google::protobuf::FileDescriptor* current = to_process.front();
-          to_process.pop();
-          
-          // Process all dependencies manually
-          for (int i = 0; i < current->dependency_count(); ++i) {
-              const google::protobuf::FileDescriptor* dep = current->dependency(i);
-              
-              if (processed_files.find(dep->name()) == processed_files.end()) {
-                  // Add to descriptor set
-                  auto* dep_proto = fd_set.add_file();
-                  dep->CopyTo(dep_proto);
-                  
-                  // Mark as processed and queue for further processing
-                  processed_files.insert(dep->name());
-                  to_process.push(dep);
-              }
-          }
       }
 
       // Write to stdout
