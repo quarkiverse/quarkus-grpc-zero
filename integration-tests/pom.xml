@@ -69,7 +69,7 @@
         <module>grpc-stork-simple</module>
         <module>grpc-stork-response-time</module>
         <!-- TODO: FIX ME! -->
-        <!-- <module>grpc-external-proto-test</module> -->
+        <module>grpc-external-proto-test</module>
         <module>grpc-external-proto</module>
         <module>grpc-hibernate-reactive</module>
         <module>grpc-hibernate</module>

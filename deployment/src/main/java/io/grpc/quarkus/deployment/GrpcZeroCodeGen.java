@@ -179,37 +179,30 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
 
                 DescriptorProtos.FileDescriptorSet.Builder descriptorSetBuilder = DescriptorProtos.FileDescriptorSet
                         .newBuilder();
+                PluginProtos.CodeGeneratorRequest.Builder requestBuilder = PluginProtos.CodeGeneratorRequest.newBuilder();
+
                 for (String protoFile : protoFiles) {
                     try (InputStream is = Files.newInputStream(Path.of(protoFile))) {
                         Files.copy(is, workdir.resolve(Path.of(protoFile).getFileName().toString()),
                                 StandardCopyOption.REPLACE_EXISTING);
                     }
 
-                    if (protoFile.startsWith("/")) {
-                        protoFile = protoFile.replaceFirst("/", "");
-                    }
-                    log.debug("adding proto file: " + workdir.resolve(Path.of(protoFile).getFileName().toString()));
-                    descriptorSetBuilder
-                            .addAllFile(getDescriptor(workdir, Path.of(protoFile).getFileName().toString()).getFileList());
+                    log.info("resolving proto file: " + protoFile);
+                    var protoName = realitivizeProtoFile(protoFile, protoDirs);
+                    log.error("final proto name: " + protoName);
+
+                    descriptorSetBuilder.addAllFile(getDescriptor(workdir, protoName).getFileList());
+                    requestBuilder.addFileToGenerate(protoName);
                 }
 
                 // Load the previously generated descriptor
                 DescriptorProtos.FileDescriptorSet descriptorSet = descriptorSetBuilder.build();
-                PluginProtos.CodeGeneratorRequest.Builder requestBuilder = PluginProtos.CodeGeneratorRequest.newBuilder();
-
-                for (String protoFile : protoFiles) {
-                    log.debug("adding proto file: " + Path.of(protoFile).getFileName().toString());
-                    requestBuilder.addFileToGenerate(Path.of(protoFile).getFileName().toString());
-                }
 
                 // Add all FileDescriptorProto entries from the descriptor set
                 // and all from dependencies
                 resolveDependencies(workdir, descriptorSet, requestBuilder);
 
                 PluginProtos.CodeGeneratorRequest codeGeneratorRequest = requestBuilder.build();
-
-                codeGeneratorRequest = PluginProtos.CodeGeneratorRequest
-                        .parseFrom(GrpcZeroCodeGen.class.getResourceAsStream("/codegen_request.pb").readAllBytes());
 
                 // protoc based plugins
                 List<String> availablePlugins = new ArrayList<>();
@@ -255,6 +248,30 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
         }
 
         return false;
+    }
+
+    public static boolean isInSubtree(Path baseDir, Path candidate) {
+        Path base = baseDir.toAbsolutePath().normalize();
+        Path cand = candidate.toAbsolutePath().normalize();
+
+        return cand.startsWith(base);
+    }
+
+    // TODO: verify is all this dance can be simplified somehow ...
+    private static String realitivizeProtoFile(String protoFile, Set<String> protoDir) {
+        Path protoFilePath = Path.of(protoFile);
+        for (String dir : protoDir) {
+            try {
+                if (isInSubtree(Path.of(dir), protoFilePath)) {
+                    Path base = Path.of(dir).toAbsolutePath().normalize();
+                    Path file = protoFilePath.toAbsolutePath().normalize();
+                    return base.relativize(file).toString();
+                }
+            } catch (IllegalArgumentException e) {
+                // cannot be relativized, skip
+            }
+        }
+        return protoFilePath.getFileName().toString();
     }
 
     private static void writeResultToDisk(List<PluginProtos.CodeGeneratorResponse.File> responseFileList, Path outDir)
