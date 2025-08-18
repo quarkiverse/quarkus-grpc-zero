@@ -177,7 +177,8 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                     copyDirectory(Path.of(protoImportDir), workdir);
                 }
 
-                List<String> protosToProcess = new ArrayList<>();
+                DescriptorProtos.FileDescriptorSet.Builder descriptorSetBuilder = DescriptorProtos.FileDescriptorSet
+                        .newBuilder();
                 for (String protoFile : protoFiles) {
                     try (InputStream is = Files.newInputStream(Path.of(protoFile))) {
                         Files.copy(is, workdir.resolve(Path.of(protoFile).getFileName().toString()),
@@ -188,11 +189,12 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                         protoFile = protoFile.replaceFirst("/", "");
                     }
                     log.debug("adding proto file: " + workdir.resolve(Path.of(protoFile).getFileName().toString()));
-                    protosToProcess.add(Path.of(protoFile).getFileName().toString());
+                    descriptorSetBuilder
+                            .addAllFile(getDescriptor(workdir, Path.of(protoFile).getFileName().toString()).getFileList());
                 }
 
                 // Load the previously generated descriptor
-                DescriptorProtos.FileDescriptorSet descriptorSet = getDescriptor(workdir, protosToProcess);
+                DescriptorProtos.FileDescriptorSet descriptorSet = descriptorSetBuilder.build();
                 PluginProtos.CodeGeneratorRequest.Builder requestBuilder = PluginProtos.CodeGeneratorRequest.newBuilder();
 
                 for (String protoFile : protoFiles) {
@@ -205,6 +207,9 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                 resolveDependencies(workdir, descriptorSet, requestBuilder);
 
                 PluginProtos.CodeGeneratorRequest codeGeneratorRequest = requestBuilder.build();
+
+                codeGeneratorRequest = PluginProtos.CodeGeneratorRequest
+                        .parseFrom(GrpcZeroCodeGen.class.getResourceAsStream("/codegen_request.pb").readAllBytes());
 
                 // protoc based plugins
                 List<String> availablePlugins = new ArrayList<>();
@@ -271,19 +276,32 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                         new MemoryLimits(10, MemoryLimits.MAX_PAGES, true)));
     }
 
-    // TODO: this might be expensive, we should probably push the logic down to cpp
     private static void resolveDependencies(Path workdir,
             DescriptorProtos.FileDescriptorSet descriptorSet, PluginProtos.CodeGeneratorRequest.Builder requestBuilder)
+            throws CodeGenException {
+        resolveDependencies(workdir, descriptorSet, requestBuilder, new ArrayList<>());
+    }
+
+    // TODO: this might be expensive, we should probably push the logic down to cpp
+    private static void resolveDependencies(Path workdir,
+            DescriptorProtos.FileDescriptorSet descriptorSet, PluginProtos.CodeGeneratorRequest.Builder requestBuilder,
+            List<String> visited)
             throws CodeGenException {
         for (DescriptorProtos.FileDescriptorProto fileDescriptor : descriptorSet.getFileList()) {
             log.info("adding descriptor: " + fileDescriptor.getName());
             for (String dep : fileDescriptor.getDependencyList()) {
-                log.info("Getting dependency descriptor for: " + dep);
-                var depFdSet = getDescriptor(workdir, dep);
-                resolveDependencies(workdir, depFdSet, requestBuilder);
+                if (!visited.contains(dep)) {
+                    log.info("Getting dependency descriptor for: " + dep);
+                    var depFdSet = getDescriptor(workdir, dep);
+                    resolveDependencies(workdir, depFdSet, requestBuilder, visited);
+                    visited.add(dep);
+                }
             }
-            requestBuilder.addProtoFile(fileDescriptor);
-            requestBuilder.addSourceFileDescriptors(fileDescriptor);
+            if (!visited.contains(fileDescriptor.getName())) {
+                requestBuilder.addProtoFile(fileDescriptor);
+                requestBuilder.addSourceFileDescriptors(fileDescriptor);
+                visited.add(fileDescriptor.getName());
+            }
         }
     }
 
