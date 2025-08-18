@@ -17,17 +17,17 @@
     <build>
         <plugins>
             <plugin>
-<artifactId>maven-jar-plugin</artifactId>
-    <configuration>
-        <archive>
-            <index>true</index>
-            <manifest>
-                <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-            </manifest>
-        </archive>
-    </configuration>
-    </plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <index>true</index>
+                        <manifest>
+                            <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

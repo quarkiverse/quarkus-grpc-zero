@@ -23,17 +23,17 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-grpc</artifactId>
         </dependency>
-        <dependency>
+        <!-- <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-integration-test-external-proto</artifactId>
             <version>999-SNAPSHOT</version>
-        </dependency>
+        </dependency> -->
         <!-- TODO: FIXME Seems like it is not packaged properly ... -->
-        <!-- <dependency>
+        <dependency>
             <groupId>io.quarkiverse.grpc.zero</groupId>
             <artifactId>quarkus-grpc-zero-integration-test-external-proto</artifactId>
             <version>${project.version}</version>
-        </dependency> -->
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>

@@ -189,7 +189,7 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
 
                     log.info("resolving proto file: " + protoFile);
                     var protoName = realitivizeProtoFile(protoFile, protoDirs);
-                    log.error("final proto name: " + protoName);
+                    log.info("final proto name: " + protoName);
 
                     descriptorSetBuilder.addAllFile(getDescriptor(workdir, protoName).getFileList());
                     requestBuilder.addFileToGenerate(protoName);
