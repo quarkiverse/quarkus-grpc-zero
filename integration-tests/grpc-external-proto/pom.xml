@@ -13,21 +13,4 @@
     <artifactId>quarkus-grpc-zero-integration-test-external-proto</artifactId>
     <name>Quarkus - Integration Tests - Helper project containing packaging a proto file for grpc-external-proto-test
     </name>
-
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <archive>
-                        <index>true</index>
-                        <manifest>
-                            <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                        </manifest>
-                    </archive>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>
