@@ -5,15 +5,20 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.quarkiverse.grpc.zero</groupId>
         <artifactId>quarkus-grpc-zero-integration-tests-parent</artifactId>
+        <groupId>io.quarkiverse.grpc.zero</groupId>
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>grpc-zero-integration-test-grpc-vertx</artifactId>
+    <artifactId>quarkus-grpc-zero-integration-test-grpc-vertx</artifactId>
     <name>Quarkus Grpc Zero - Integration Tests - gRPC - Vertx</name>
 
     <dependencies>
+        <dependency>
+            <groupId>io.quarkiverse.grpc.zero</groupId>
+            <artifactId>quarkus-grpc-zero</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy</artifactId>
@@ -25,11 +30,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-grpc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkiverse.grpc.zero</groupId>
-            <artifactId>quarkus-grpc-zero</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
