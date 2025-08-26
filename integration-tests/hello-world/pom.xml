@@ -27,13 +27,6 @@
             <artifactId>quarkus-grpc-zero</artifactId>
             <version>${project.version}</version>
         </dependency>
-
-        <!-- HACK: I need the classpath and generation is disabled by GrpcZero -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-grpc</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
@@ -75,9 +68,8 @@
                 <executions>
                     <execution>
                         <goals>
-			    <goal>build</goal>
-			    <goal>generate-code</goal>
-		            <goal>generate-code-tests</goal>
+			                <goal>build</goal>
+			                <goal>generate-code</goal>
                         </goals>
                     </execution>
                 </executions>

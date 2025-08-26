@@ -12,8 +12,8 @@
   <version>999-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <name>Quarkus Grpc Zero Extension</name>
-  <description>A Quarkus Extension to generate code with Grpc</description>
+  <name>Quarkus Grpc Zero Codegen</name>
+  <description>A code generator for Grpc with no native dependencies</description>
   <url>https://github.com/quarkiverse/quarkus-grpc-zero</url>
 
   <organization>
@@ -69,6 +69,10 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <quarkus.version>3.23.2</quarkus.version>
     <chicory.version>1.5.1</chicory.version>
+    <zerofs.version>0.1.0</zerofs.version>
+    <javaparser.version>3.26.4</javaparser.version>
+    <grpc-kotlin.version>1.4.1</grpc-kotlin.version>
+    <grpc.version>1.69.1</grpc.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -158,18 +162,14 @@
         <activeByDefault>true</activeByDefault>
       </activation>
       <modules>
-        <module>deployment</module>
-        <module>runtime</module>
+        <module>codegen</module>
         <module>integration-tests</module>
-        <module>docs</module>
       </modules>
     </profile>
     <profile>
       <id>release</id>
       <modules>
-        <module>deployment</module>
-        <module>runtime</module>
-        <module>docs</module>
+        <module>codegen</module>
       </modules>
       <build>
         <plugins>

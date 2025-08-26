@@ -6,17 +6,31 @@
     <artifactId>quarkus-grpc-zero-parent</artifactId>
     <version>999-SNAPSHOT</version>
   </parent>
-  <artifactId>quarkus-grpc-zero-deployment</artifactId>
-  <name>Quarkus Grpc Zero - Deployment</name>
+  <artifactId>quarkus-grpc-zero</artifactId>
+  <name>Quarkus Grpc Zero - CodeGen</name>
   <dependencies>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-arc</artifactId>
+    </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-arc-deployment</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.quarkiverse.grpc.zero</groupId>
-      <artifactId>quarkus-grpc-zero</artifactId>
-      <version>${project.version}</version>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-grpc</artifactId>
+      <exclusions>
+        <exclusion>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc-codegen</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+        <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-api</artifactId>
+        <version>${grpc.version}</version>
     </dependency>
     <dependency>
       <groupId>com.dylibso.chicory</groupId>
@@ -25,12 +39,12 @@
     <dependency>
       <groupId>io.roastedroot</groupId>
       <artifactId>zerofs</artifactId>
-      <version>0.1.0</version>
+      <version>${zerofs.version}</version>
     </dependency>
     <dependency>
       <groupId>com.github.javaparser</groupId>
       <artifactId>javaparser-core</artifactId>
-      <version>3.26.4</version>
+      <version>${javaparser.version}</version>
     </dependency>
 
     <!-- Mutiny generator -->
@@ -43,7 +57,7 @@
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>protoc-gen-grpc-kotlin</artifactId>
-      <version>1.4.1</version>
+      <version>${grpc-kotlin.version}</version>
       <classifier>jdk8</classifier>
     </dependency>
 
@@ -79,7 +93,7 @@
               <goal>compile</goal>
             </goals>
             <configuration>
-              <name>io.grpc.quarkus.deployment.ProtocWrapper</name>
+              <name>io.quarkiverse.grpc.codegen.ProtocWrapper</name>
               <wasmFile>${project.basedir}/../wasm/protoc-wrapper.wasm</wasmFile>
             </configuration>
           </execution>
