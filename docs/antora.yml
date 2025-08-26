@@ -1,5 +1,0 @@
-name: quarkus-grpc-zero
-title: Kiota
-version: dev
-nav:
-  - modules/ROOT/nav.adoc

@@ -6,17 +6,12 @@
     <artifactId>quarkus-grpc-zero-parent</artifactId>
     <version>999-SNAPSHOT</version>
   </parent>
-  <artifactId>quarkus-grpc-zero-deployment</artifactId>
-  <name>Quarkus Grpc Zero - Deployment</name>
+  <artifactId>quarkus-grpc-zero</artifactId>
+  <name>Quarkus Grpc Zero - CodeGen</name>
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-arc-deployment</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkiverse.grpc.zero</groupId>
-      <artifactId>quarkus-grpc-zero</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>com.dylibso.chicory</groupId>
@@ -25,12 +20,12 @@
     <dependency>
       <groupId>io.roastedroot</groupId>
       <artifactId>zerofs</artifactId>
-      <version>0.1.0</version>
+      <version>${zerofs.version}</version>
     </dependency>
     <dependency>
       <groupId>com.github.javaparser</groupId>
       <artifactId>javaparser-core</artifactId>
-      <version>3.26.4</version>
+      <version>${javaparser.version}</version>
     </dependency>
 
     <!-- Mutiny generator -->
