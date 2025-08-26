@@ -1,4 +1,4 @@
-package io.grpc.quarkus.deployment;
+package io.quarkiverse.grpc.codegen;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
@@ -69,8 +69,6 @@ import io.roastedroot.zerofs.ZeroFs;
 public class GrpcZeroCodeGen implements CodeGenProvider {
     private static final Logger log = Logger.getLogger(GrpcZeroCodeGen.class);
 
-    private static final String quarkusProtocPluginMain = "io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator";
-
     private static final String PROTO = ".proto";
 
     private static final String SCAN_DEPENDENCIES_FOR_PROTO = "quarkus.generate-code.grpc.scan-for-proto";
@@ -121,14 +119,14 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
 
     @Override
     public boolean trigger(CodeGenContext context) throws CodeGenException {
-        // FIXME: application.properties is not picked up?
-        // HACK -> verify why it doesn't work from application.properties
-        System.getProperties().setProperty("grpc.codegen.skip", "true");
         if (TRUE.toString().equalsIgnoreCase(System.getProperties().getProperty("grpc.zero.codegen.skip", "false"))
                 || context.config().getOptionalValue("quarkus.zero.grpc.codegen.skip", Boolean.class).orElse(false)) {
             log.info("Skipping gRPC zero code generation on user's request");
             return false;
         }
+        // HACK: if present on the classpath this code generator attempts to disable the "official" Quarkus
+        System.getProperties().setProperty("grpc.codegen.skip", "true");
+
         Path outDir = context.outDir();
         Path workDir = context.workDir();
         Path inputDir = CodeGenProvider.resolve(context.inputDir());

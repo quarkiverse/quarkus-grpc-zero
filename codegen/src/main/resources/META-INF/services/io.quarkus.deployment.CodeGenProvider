@@ -1,1 +1,1 @@
-io.grpc.quarkus.deployment.GrpcZeroCodeGen
+io.quarkiverse.grpc.codegen.GrpcZeroCodeGen

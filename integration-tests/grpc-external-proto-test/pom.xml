@@ -20,10 +20,6 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-grpc</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.quarkiverse.grpc.zero</groupId>
             <artifactId>quarkus-grpc-zero-integration-test-external-proto</artifactId>
             <version>${project.version}</version>

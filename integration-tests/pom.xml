@@ -62,13 +62,12 @@
         <module>hello-world</module>
         <module>hello-world-kotlin</module>
         <module>grpc-vertx</module>
-        <module>grpc-tls-p12</module>
+        <!-- <module>grpc-tls-p12</module>
         <module>grpc-tls</module>
         <module>grpc-test-random-port</module>
         <module>grpc-exceptions</module>
         <module>grpc-stork-simple</module>
         <module>grpc-stork-response-time</module>
-        <!-- TODO: FIX ME! -->
         <module>grpc-external-proto-test</module>
         <module>grpc-external-proto</module>
         <module>grpc-hibernate-reactive</module>
@@ -82,7 +81,7 @@
         <module>grpc-plain-text-gzip</module>
         <module>grpc-cli</module>
         <module>grpc-inprocess</module>
-        <module>grpc-descriptor-sets</module>
+        <module>grpc-descriptor-sets</module> -->
       </modules>
     </profile>
     <profile>

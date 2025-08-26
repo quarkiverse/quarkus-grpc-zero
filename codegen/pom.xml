@@ -11,7 +11,21 @@
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-arc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
       <artifactId>quarkus-arc-deployment</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-grpc</artifactId>
+      <exclusions>
+        <exclusion>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc-codegen</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.dylibso.chicory</groupId>
@@ -38,7 +52,7 @@
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>protoc-gen-grpc-kotlin</artifactId>
-      <version>1.4.1</version>
+      <version>${grpc-kotlin.version}</version>
       <classifier>jdk8</classifier>
     </dependency>
 
@@ -74,7 +88,7 @@
               <goal>compile</goal>
             </goals>
             <configuration>
-              <name>io.grpc.quarkus.deployment.ProtocWrapper</name>
+              <name>io.quarkiverse.grpc.codegen.ProtocWrapper</name>
               <wasmFile>${project.basedir}/../wasm/protoc-wrapper.wasm</wasmFile>
             </configuration>
           </execution>

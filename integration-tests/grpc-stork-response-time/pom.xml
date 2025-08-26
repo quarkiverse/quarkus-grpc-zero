@@ -14,18 +14,14 @@
   <name>Quarkus Grpc Zero - Integration Tests - gRPC with Stork - gathering response times</name>
 
   <dependencies>
-        <dependency>
-            <groupId>io.quarkiverse.grpc.zero</groupId>
-            <artifactId>quarkus-grpc-zero</artifactId>
-            <version>${project.version}</version>
-        </dependency>
     <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-rest-jackson</artifactId>
+        <groupId>io.quarkiverse.grpc.zero</groupId>
+        <artifactId>quarkus-grpc-zero</artifactId>
+        <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-grpc</artifactId>
+      <artifactId>quarkus-rest-jackson</artifactId>
     </dependency>
     <dependency>
       <groupId>io.smallrye.stork</groupId>
