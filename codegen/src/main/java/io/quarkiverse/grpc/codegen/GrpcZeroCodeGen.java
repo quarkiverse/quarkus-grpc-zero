@@ -58,9 +58,9 @@ import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathFilter;
 import io.quarkus.runtime.util.HashUtil;
-import io.quarkus.utilities.OS;
 import io.roastedroot.zerofs.Configuration;
 import io.roastedroot.zerofs.ZeroFs;
+import io.smallrye.common.os.OS;
 
 /**
  * Code generation for gRPC. Generates java classes from proto files placed in either src/main/proto or src/test/proto
@@ -643,7 +643,7 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
     }
 
     private String escapeWhitespace(String path) {
-        if (OS.determineOS() == OS.LINUX) {
+        if (OS.current() == OS.LINUX) {
             return path.replace(" ", "\\ ");
         } else {
             return path;
