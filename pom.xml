@@ -33,8 +33,8 @@
     <developer>
       <name>Andrea Peruffo</name>
       <email>andrea.peruffo1982@gmail.com</email>
-      <organization>Red Hat</organization>
-      <organizationUrl>https://www.redhat.com</organizationUrl>
+      <organization>IBM</organization>
+      <organizationUrl>https://www.ibm.com</organizationUrl>
     </developer>
   </developers>
 
@@ -54,9 +54,9 @@
   </distributionManagement>
 
   <properties>
-    <maven.compiler.source>11</maven.compiler.source>
-    <maven.compiler.target>11</maven.compiler.target>
-    <maven.compiler.release>11</maven.compiler.release>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.release>17</maven.compiler.release>
     <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
     <maven-invoker-plugin.version>3.6.0</maven-invoker-plugin.version>
     <maven-failsafe-plugin.version>3.5.3</maven-failsafe-plugin.version>
@@ -67,7 +67,7 @@
     <maven-gpg-plugin.version>3.2.7</maven-gpg-plugin.version>
     <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <quarkus.version>3.23.2</quarkus.version>
+    <quarkus.version>3.26.0</quarkus.version>
     <chicory.version>1.5.1</chicory.version>
     <zerofs.version>0.1.0</zerofs.version>
     <javaparser.version>3.26.4</javaparser.version>
