@@ -67,7 +67,7 @@
     <maven-gpg-plugin.version>3.2.7</maven-gpg-plugin.version>
     <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <quarkus.version>3.26.0</quarkus.version>
+    <quarkus.version>3.26.1</quarkus.version>
     <chicory.version>1.5.1</chicory.version>
     <zerofs.version>0.1.0</zerofs.version>
     <javaparser.version>3.26.4</javaparser.version>
