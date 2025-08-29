@@ -11,7 +11,7 @@
   <name>Quarkus Grpc Zero - Integration Tests - Parent</name>
   <properties>
     <skipITs>true</skipITs>
-    <assertj.version>3.22.0</assertj.version>
+    <assertj.version>3.27.4</assertj.version>
     <smallrye-certificate-generator.version>0.9.2</smallrye-certificate-generator.version>
   </properties>
   
