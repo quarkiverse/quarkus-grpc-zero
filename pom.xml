@@ -72,7 +72,7 @@
     <zerofs.version>0.1.0</zerofs.version>
     <javaparser.version>3.26.4</javaparser.version>
     <grpc-kotlin.version>1.4.3</grpc-kotlin.version>
-    <grpc.version>1.69.1</grpc.version>
+    <grpc.version>1.75.0</grpc.version>
   </properties>
   <dependencyManagement>
     <dependencies>
