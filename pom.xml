@@ -168,6 +168,11 @@
     </profile>
     <profile>
       <id>release</id>
+      <activation>
+        <property>
+          <name>performRelease</name>
+        </property>
+      </activation>
       <modules>
         <module>codegen</module>
       </modules>
