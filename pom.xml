@@ -9,7 +9,7 @@
 
   <groupId>io.quarkiverse.grpc.zero</groupId>
   <artifactId>quarkus-grpc-zero-parent</artifactId>
-  <version>0.0.2</version>
+  <version>999-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Quarkus Grpc Zero Codegen</name>
@@ -41,7 +41,7 @@
   <scm>
     <connection>scm:git:git@github.com:quarkiverse/quarkus-grpc-zero.git</connection>
     <developerConnection>scm:git:git@github.com:quarkiverse/quarkus-grpc-zero.git</developerConnection>
-    <tag>0.0.2</tag>
+    <tag>HEAD</tag>
     <url>https://github.com/quarkiverse/quarkus-grpc-zero</url>
   </scm>
 
