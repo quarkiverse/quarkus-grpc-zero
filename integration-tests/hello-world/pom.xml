@@ -14,7 +14,7 @@
     <name>Quarkus Grpc Zero - Integration Test - Hello World</name>
 
     <properties>
-        <assertj.version>3.27.5</assertj.version>
+        <assertj.version>3.27.6</assertj.version>
     </properties>
 
     <dependencies>
