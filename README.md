@@ -108,3 +108,10 @@ Additionally, you can skip code generation with:
 ```
 
 > Must be set at the **Maven/JVM level** — it does **not** work when placed in `application.properties`.
+
+# Thanks
+
+This project is building on the shoulders of giants. Special thanks to:
+
+- [wasilibs/go-protoc-gen-grpc-java](wasilibs/go-protoc-gen-grpc-java) – for prior work and invaluable help
+- [dylibso/chicory](https://github.com/dylibso/chicory) – for the Wasm compiler to Java Bytecode
