@@ -27,13 +27,9 @@
       <version>${grpc.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.dylibso.chicory</groupId>
-      <artifactId>wasi</artifactId>
-    </dependency>
-    <dependency>
       <groupId>io.roastedroot</groupId>
-      <artifactId>zerofs</artifactId>
-      <version>${zerofs.version}</version>
+      <artifactId>protobuf4j-v3</artifactId>
+      <version>${protobuf4j.version}</version>
     </dependency>
     <dependency>
       <groupId>com.github.javaparser</groupId>
@@ -74,24 +70,6 @@
             </path>
           </annotationProcessorPaths>
         </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>com.dylibso.chicory</groupId>
-        <artifactId>chicory-compiler-maven-plugin</artifactId>
-        <version>${chicory.version}</version>
-        <executions>
-          <execution>
-            <id>protoc-wrapper</id>
-            <goals>
-              <goal>compile</goal>
-            </goals>
-            <configuration>
-              <name>io.quarkiverse.grpc.codegen.ProtocWrapper</name>
-              <wasmFile>${project.basedir}/../wasm/protoc-wrapper.wasm</wasmFile>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

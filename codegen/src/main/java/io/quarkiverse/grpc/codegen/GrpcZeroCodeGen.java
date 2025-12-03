@@ -36,16 +36,6 @@ import java.util.stream.Stream;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
-import com.dylibso.chicory.runtime.ByteArrayMemory;
-import com.dylibso.chicory.runtime.ImportMemory;
-import com.dylibso.chicory.runtime.ImportValues;
-import com.dylibso.chicory.runtime.Instance;
-import com.dylibso.chicory.runtime.TrapException;
-import com.dylibso.chicory.wasi.WasiExitException;
-import com.dylibso.chicory.wasi.WasiOptions;
-import com.dylibso.chicory.wasi.WasiPreview1;
-import com.dylibso.chicory.wasm.WasmModule;
-import com.dylibso.chicory.wasm.types.MemoryLimits;
 import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.compiler.PluginProtos;
 
@@ -58,6 +48,7 @@ import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathFilter;
 import io.quarkus.runtime.util.HashUtil;
+import io.roastedroot.protobuf4j.v3.Protobuf;
 import io.roastedroot.zerofs.Configuration;
 import io.roastedroot.zerofs.ZeroFs;
 import io.smallrye.common.os.OS;
@@ -82,8 +73,6 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
     private static final String DESCRIPTOR_SET_FILENAME = "quarkus.generate-code.grpc.descriptor-set.name";
 
     private static final String GENERATE_KOTLIN = "quarkus.generate-code.grpc.kotlin.generate";
-
-    private static final WasmModule PROTOC_WRAPPER = ProtocWrapper.load();
 
     private String input;
     private boolean hasQuarkusKotlinDependency;
@@ -179,6 +168,8 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                         .newBuilder();
                 PluginProtos.CodeGeneratorRequest.Builder requestBuilder = PluginProtos.CodeGeneratorRequest.newBuilder();
 
+                var protobuf = Protobuf.builder().withWorkdir(workdir).build();
+
                 for (String protoFile : protoFiles) {
                     try (InputStream is = Files.newInputStream(Path.of(protoFile))) {
                         Files.copy(is, workdir.resolve(Path.of(protoFile).getFileName().toString()),
@@ -189,7 +180,7 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                     var protoName = realitivizeProtoFile(protoFile, protoDirs);
                     log.info("final proto name: " + protoName);
 
-                    descriptorSetBuilder.addAllFile(getDescriptor(workdir, protoName).getFileList());
+                    descriptorSetBuilder.addAllFile(protobuf.getDescriptors(List.of(protoName)).getFileList());
                     requestBuilder.addFileToGenerate(protoName);
                 }
 
@@ -198,21 +189,21 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
 
                 // Add all FileDescriptorProto entries from the descriptor set
                 // and all from dependencies
-                resolveDependencies(workdir, descriptorSet, requestBuilder);
+                resolveDependencies(protobuf, descriptorSet, requestBuilder);
 
                 PluginProtos.CodeGeneratorRequest codeGeneratorRequest = requestBuilder.build();
 
                 // protoc based plugins
-                List<String> availablePlugins = new ArrayList<>();
-                availablePlugins.add("java");
-                availablePlugins.add("grpc-java");
-
-                for (String pluginName : availablePlugins) {
-                    log.info("Running grpc plugin " + pluginName);
-                    PluginProtos.CodeGeneratorResponse response = runNativePlugin(pluginName, codeGeneratorRequest, workdir);
-
-                    writeResultToDisk(response.getFileList(), outDir);
-                }
+                var javaResponse = Protobuf.runNativePlugin(
+                        io.roastedroot.protobuf4j.common.Protobuf.NativePlugin.JAVA,
+                        codeGeneratorRequest,
+                        workdir);
+                writeResultToDisk(javaResponse.getFileList(), outDir);
+                var grpcJavaResponse = Protobuf.runNativePlugin(
+                        io.roastedroot.protobuf4j.common.Protobuf.NativePlugin.GRPC_JAVA,
+                        codeGeneratorRequest,
+                        workdir);
+                writeResultToDisk(grpcJavaResponse.getFileList(), outDir);
 
                 log.info("Running MutinyGrpcGenerator plugin");
                 List<PluginProtos.CodeGeneratorResponse.File> mutinyResponse = new MutinyGrpcGenerator()
@@ -283,22 +274,13 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
         }
     }
 
-    private static ImportMemory getDefaultMemory() {
-        return new ImportMemory(
-                "env",
-                "memory",
-                new ByteArrayMemory(
-                        new MemoryLimits(10, MemoryLimits.MAX_PAGES, true)));
-    }
-
-    private static void resolveDependencies(Path workdir,
+    private static void resolveDependencies(Protobuf protobuf,
             DescriptorProtos.FileDescriptorSet descriptorSet, PluginProtos.CodeGeneratorRequest.Builder requestBuilder)
             throws CodeGenException {
-        resolveDependencies(workdir, descriptorSet, requestBuilder, new ArrayList<>());
+        resolveDependencies(protobuf, descriptorSet, requestBuilder, new ArrayList<>());
     }
 
-    // TODO: this might be expensive, we should probably push the logic down to cpp
-    private static void resolveDependencies(Path workdir,
+    private static void resolveDependencies(Protobuf protobuf,
             DescriptorProtos.FileDescriptorSet descriptorSet, PluginProtos.CodeGeneratorRequest.Builder requestBuilder,
             List<String> visited)
             throws CodeGenException {
@@ -307,8 +289,8 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
             for (String dep : fileDescriptor.getDependencyList()) {
                 if (!visited.contains(dep)) {
                     log.info("Getting dependency descriptor for: " + dep);
-                    var depFdSet = getDescriptor(workdir, dep);
-                    resolveDependencies(workdir, depFdSet, requestBuilder, visited);
+                    var depFdSet = protobuf.getDescriptors(List.of(dep));
+                    resolveDependencies(protobuf, depFdSet, requestBuilder, visited);
                     visited.add(dep);
                 }
             }
@@ -392,97 +374,6 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
 
         new GrpcZeroPostProcessing(context, outDir).postprocess();
 
-    }
-
-    private static DescriptorProtos.FileDescriptorSet getDescriptor(Path workdir, String fileName)
-            throws CodeGenException {
-        return getDescriptor(workdir, List.of(fileName));
-    }
-
-    private static DescriptorProtos.FileDescriptorSet getDescriptor(Path workdir, List<String> fileNames)
-            throws CodeGenException {
-        try (ByteArrayOutputStream stdout = new ByteArrayOutputStream();
-                ByteArrayOutputStream stderr = new ByteArrayOutputStream()) {
-            var wasiOptsBuilder = WasiOptions.builder()
-                    .withStdout(stdout)
-                    .withStderr(stderr);
-
-            List<String> command = new ArrayList<>();
-            command.add("protoc-wrapper");
-            command.add("descriptors");
-
-            command.addAll(fileNames);
-
-            var wasiOpts = wasiOptsBuilder
-                    .withArguments(command)
-                    .withDirectory(workdir.toString(), workdir)
-                    .build();
-            try (var wasi = WasiPreview1.builder().withOptions(wasiOpts).build()) {
-                var imports = ImportValues.builder()
-                        .addFunction(wasi.toHostFunctions())
-                        .addMemory(getDefaultMemory())
-                        .build();
-
-                log.debug("protoc command: " + command.stream().collect(Collectors.joining(" ")));
-                Instance
-                        .builder(PROTOC_WRAPPER)
-                        .withImportValues(imports)
-                        .withMachineFactory(ProtocWrapper::create)
-                        .build();
-            } catch (TrapException trap) {
-                System.out.println(stdout);
-                System.err.println(stderr);
-                throw new CodeGenException("Error running protoc-wrapper, trapped");
-            } catch (WasiExitException exit) {
-                System.out.println(stdout);
-                System.err.println(stderr);
-                if (exit.exitCode() != 0) {
-                    throw new CodeGenException("Error running protoc-wrapper: " + exit.exitCode());
-                }
-            }
-            return DescriptorProtos.FileDescriptorSet.parseFrom(stdout.toByteArray());
-        } catch (IOException e) {
-            throw new CodeGenException(
-                    "Failed to generate java files from proto files " + fileNames.stream().collect(Collectors.joining(", ")),
-                    e);
-        }
-    }
-
-    private static PluginProtos.CodeGeneratorResponse runNativePlugin(String pluginName,
-            PluginProtos.CodeGeneratorRequest codeGeneratorRequest, Path workdir) throws CodeGenException {
-        try (ByteArrayOutputStream stdout = new ByteArrayOutputStream();
-                ByteArrayOutputStream stderr = new ByteArrayOutputStream()) {
-
-            var wasiOptsBuilder = WasiOptions.builder()
-                    .withStdout(stdout)
-                    .withStderr(stderr);
-
-            var wasiOpts = wasiOptsBuilder
-                    .withStdin(new ByteArrayInputStream(codeGeneratorRequest.toByteArray()))
-                    .withArguments(List.of("protoc-wrapper", pluginName))
-                    .withDirectory(workdir.toString(), workdir)
-                    .build();
-            try (var wasi = WasiPreview1.builder().withOptions(wasiOpts).build()) {
-                var imports = ImportValues.builder()
-                        .addFunction(wasi.toHostFunctions())
-                        .addMemory(getDefaultMemory())
-                        .build();
-
-                Instance.builder(PROTOC_WRAPPER)
-                        .withImportValues(imports)
-                        .withMachineFactory(ProtocWrapper::create)
-                        .build();
-            } catch (Exception e) {
-                log.error("Error running protoc native plugin ", e);
-                System.out.println(stdout);
-                System.err.println(stderr);
-                throw new CodeGenException("Error running protoc native plugin.", e);
-            }
-
-            return PluginProtos.CodeGeneratorResponse.parseFrom(stdout.toByteArray());
-        } catch (IOException e) {
-            throw new CodeGenException("Failed to run native protoc plugin " + pluginName, e);
-        }
     }
 
     private Collection<Path> gatherProtosFromDependencies(Path workDir, Set<String> protoDirectories,
