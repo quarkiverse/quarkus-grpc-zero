@@ -1,5 +1,6 @@
 package io.quarkiverse.grpc.codegen;
 
+import static io.roastedroot.protobuf4j.common.Protobuf.collectDependencies;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.nio.file.Files.copy;
@@ -37,6 +38,7 @@ import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
 import com.google.protobuf.DescriptorProtos;
+import com.google.protobuf.Descriptors;
 import com.google.protobuf.compiler.PluginProtos;
 
 import io.grpc.kotlin.generator.GeneratorRunner;
@@ -277,29 +279,21 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
     private static void resolveDependencies(Protobuf protobuf,
             DescriptorProtos.FileDescriptorSet descriptorSet, PluginProtos.CodeGeneratorRequest.Builder requestBuilder)
             throws CodeGenException {
-        resolveDependencies(protobuf, descriptorSet, requestBuilder, new ArrayList<>());
-    }
+        // Use protobuf4j's buildFileDescriptors to resolve all dependencies
+        List<Descriptors.FileDescriptor> fileDescriptors = protobuf.buildFileDescriptors(descriptorSet);
 
-    private static void resolveDependencies(Protobuf protobuf,
-            DescriptorProtos.FileDescriptorSet descriptorSet, PluginProtos.CodeGeneratorRequest.Builder requestBuilder,
-            List<String> visited)
-            throws CodeGenException {
-        for (DescriptorProtos.FileDescriptorProto fileDescriptor : descriptorSet.getFileList()) {
-            log.info("adding descriptor: " + fileDescriptor.getName());
-            for (String dep : fileDescriptor.getDependencyList()) {
-                if (!visited.contains(dep)) {
-                    log.info("Getting dependency descriptor for: " + dep);
-                    var depFdSet = protobuf.getDescriptors(List.of(dep));
-                    resolveDependencies(protobuf, depFdSet, requestBuilder, visited);
-                    visited.add(dep);
-                }
-            }
-            if (!visited.contains(fileDescriptor.getName())) {
-                requestBuilder.addProtoFile(fileDescriptor);
-                requestBuilder.addSourceFileDescriptors(fileDescriptor);
-                visited.add(fileDescriptor.getName());
-            }
+        // Collect all file descriptors (including transitive dependencies) into a new descriptor set
+        DescriptorProtos.FileDescriptorSet.Builder allDescriptorsBuilder = DescriptorProtos.FileDescriptorSet.newBuilder();
+        Set<String> added = new HashSet<>();
+
+        // For each file descriptor in the original set, collect all its dependencies
+        for (Descriptors.FileDescriptor fileDescriptor : fileDescriptors) {
+            collectDependencies(fileDescriptor, allDescriptorsBuilder, added);
         }
+
+        // Add all collected FileDescriptorProto objects to the request builder
+        DescriptorProtos.FileDescriptorSet allDescriptors = allDescriptorsBuilder.build();
+        requestBuilder.addAllProtoFile(allDescriptors.getFileList());
     }
 
     public static void copyDirectory(final Path source, final Path target) throws IOException {
