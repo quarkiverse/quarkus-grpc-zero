@@ -302,7 +302,9 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
                 if (java.nio.file.Files.isSymbolicLink(dir)) {
                     return FileVisitResult.SKIP_SUBTREE;
                 } else {
-                    Path directory = target.resolve(source.relativize(dir).toString());
+                    Path relativePath = source.relativize(dir).normalize();
+                    String relative = relativePath.toString().replace("\\", "/");
+                    Path directory = target.resolve(relative).normalize();
                     if (!directory.toString().equals("/")) {
                         FileAttribute<?>[] attributes = new FileAttribute[0];
                         PosixFileAttributeView attributeView = (PosixFileAttributeView) java.nio.file.Files
@@ -322,8 +324,9 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
             }
 
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                String relative = source.relativize(file).toString().replace("\\", "/");
-                Path path = target.resolve(relative);
+                Path relativePath = source.relativize(file).normalize();
+                String relative = relativePath.toString().replace("\\", "/");
+                Path path = target.resolve(relative).normalize();
                 java.nio.file.Files.copy(file, path, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
                 return FileVisitResult.CONTINUE;
             }
