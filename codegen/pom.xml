@@ -28,7 +28,7 @@
     </dependency>
     <dependency>
       <groupId>io.roastedroot</groupId>
-      <artifactId>protobuf4j-v3</artifactId>
+      <artifactId>protobuf4j-v4</artifactId>
       <version>${protobuf4j.version}</version>
     </dependency>
     <dependency>
@@ -42,13 +42,6 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-grpc-protoc-plugin</artifactId>
       <version>${quarkus.version}</version>
-    </dependency>
-    <!-- Kotlin generator -->
-    <dependency>
-      <groupId>io.grpc</groupId>
-      <artifactId>protoc-gen-grpc-kotlin</artifactId>
-      <version>${grpc-kotlin.version}</version>
-      <classifier>jdk8</classifier>
     </dependency>
 
     <dependency>

@@ -5,8 +5,6 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.nio.file.Files.copy;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileSystem;
@@ -41,7 +39,6 @@ import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.compiler.PluginProtos;
 
-import io.grpc.kotlin.generator.GeneratorRunner;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.deployment.CodeGenContext;
@@ -50,7 +47,7 @@ import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathFilter;
 import io.quarkus.runtime.util.HashUtil;
-import io.roastedroot.protobuf4j.v3.Protobuf;
+import io.roastedroot.protobuf4j.v4.Protobuf;
 import io.roastedroot.zerofs.Configuration;
 import io.roastedroot.zerofs.ZeroFs;
 import io.smallrye.common.os.OS;
@@ -215,14 +212,11 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
 
                 if (shouldGenerateKotlin(context.config())) {
                     log.info("Running KotlinGenerator plugin");
-                    ByteArrayInputStream input = new ByteArrayInputStream(codeGeneratorRequest.toByteArray());
-                    ByteArrayOutputStream output = new ByteArrayOutputStream();
-
-                    GeneratorRunner.INSTANCE.mainAsProtocPlugin(input, output);
-
-                    var response = PluginProtos.CodeGeneratorResponse.parseFrom(output.toByteArray());
-
-                    writeResultToDisk(response.getFileList(), outDir);
+                    var grpcKotlinResponse = Protobuf.runNativePlugin(
+                            io.roastedroot.protobuf4j.common.Protobuf.NativePlugin.KOTLIN,
+                            codeGeneratorRequest,
+                            workdir);
+                    writeResultToDisk(grpcKotlinResponse.getFileList(), outDir);
                 }
 
                 if (shouldGenerateDescriptorSet(context.config())) {
