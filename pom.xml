@@ -68,7 +68,7 @@
     <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <quarkus.version>3.32.2</quarkus.version>
-    <protobuf4j.version>0.0.3</protobuf4j.version>
+    <protobuf4j.version>0.0.4</protobuf4j.version>
     <javaparser.version>3.28.0</javaparser.version>
     <grpc-kotlin.version>1.5.0</grpc-kotlin.version>
     <grpc.version>1.79.0</grpc.version>
