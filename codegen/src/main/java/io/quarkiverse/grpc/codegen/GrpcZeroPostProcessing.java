@@ -1,6 +1,7 @@
 package io.quarkiverse.grpc.codegen;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 
 import org.jboss.logging.Logger;
@@ -54,7 +55,11 @@ public class GrpcZeroPostProcessing {
         for (String arg : args) {
             Path path = new File(arg).toPath();
             var postprocessing = new GrpcZeroPostProcessing(path);
-            postprocessing.postprocess();
+            try {
+                postprocessing.postprocess();
+            } catch (IOException e) {
+                log.error("Failed to post-process " + arg, e);
+            }
         }
 
     }
@@ -63,37 +68,22 @@ public class GrpcZeroPostProcessing {
         return Boolean.getBoolean(name) || context.config().getOptionalValue(name, Boolean.class).orElse(def);
     }
 
-    public void postprocess() {
+    public void postprocess() throws IOException {
         SourceRoot sr = new SourceRoot(root);
-        try {
-            sr.parse("", new SourceRoot.Callback() {
-                @Override
-                public com.github.javaparser.utils.SourceRoot.Callback.Result process(Path localPath, Path absolutePath,
-                        com.github.javaparser.ParseResult<CompilationUnit> result) {
-                    if (result.isSuccessful()) {
-                        CompilationUnit unit = result.getResult().orElseThrow(); // the parsing succeed, so we can retrieve the cu
+        sr.parse("", (localPath, absolutePath, result) -> {
+            if (!result.isSuccessful()) {
+                throw new PostProcessingException("Unable to parse " + absolutePath + ": " + result.getProblems());
+            }
 
-                        if (unit.getPrimaryType().isPresent()) {
-                            TypeDeclaration<?> type = unit.getPrimaryType().get();
-                            postprocess(unit, type);
-                            return Result.SAVE;
-                        }
+            CompilationUnit unit = result.getResult().orElseThrow();
+            if (unit.getPrimaryType().isPresent()) {
+                TypeDeclaration<?> type = unit.getPrimaryType().get();
+                postprocess(unit, type);
+                return SourceRoot.Callback.Result.SAVE;
+            }
 
-                    } else {
-                        // Compilation issue - report and skip
-                        log.errorf(
-                                "Unable to parse a class generated using protoc, skipping post-processing for this " +
-                                        "file. Reported problems are %s",
-                                result.toString());
-                    }
-
-                    return Result.DONT_SAVE;
-                }
-            });
-        } catch (Exception e) {
-            // read issue, report and exit
-            log.error("Unable to parse the classes generated using protoc - skipping gRPC post processing", e);
-        }
+            return SourceRoot.Callback.Result.DONT_SAVE;
+        });
     }
 
     private void postprocess(CompilationUnit unit, TypeDeclaration<?> primary) {
@@ -132,5 +122,15 @@ public class GrpcZeroPostProcessing {
                 return super.visit(n, arg);
             }
         }, null);
+    }
+
+    public static class PostProcessingException extends RuntimeException {
+        public PostProcessingException(String message) {
+            super(message);
+        }
+
+        public PostProcessingException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 }

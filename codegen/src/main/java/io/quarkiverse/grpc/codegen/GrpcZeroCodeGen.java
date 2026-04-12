@@ -27,6 +27,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -225,6 +226,16 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
 
                 writeResultToDisk(mutinyResponse, outDir);
 
+                // Additional Generators via Custom SPI
+                ServiceLoader<GrpcZeroGenerator> generators = ServiceLoader.load(GrpcZeroGenerator.class,
+                        GrpcZeroCodeGen.class.getClassLoader());
+                for (GrpcZeroGenerator generator : generators) {
+                    log.infof("Running %s plugin", generator.getClass().getName());
+                    List<PluginProtos.CodeGeneratorResponse.File> response = generator.generate(codeGeneratorRequest)
+                            .collect(Collectors.toList());
+                    writeResultToDisk(response, outDir);
+                }
+
                 if (shouldGenerateKotlin(context.config())) {
                     log.info("Running KotlinGenerator plugin");
                     var grpcKotlinResponse = Protobuf.runNativePlugin(
@@ -371,15 +382,31 @@ public class GrpcZeroCodeGen implements CodeGenProvider {
         }
     }
 
-    private void postprocessing(CodeGenContext context, Path outDir) {
+    private void postprocessing(CodeGenContext context, Path outDir) throws CodeGenException {
         if (TRUE.toString().equalsIgnoreCase(System.getProperties().getProperty(POST_PROCESS_SKIP, "false"))
                 || context.config().getOptionalValue(POST_PROCESS_SKIP, Boolean.class).orElse(false)) {
             log.info("Skipping gRPC Post-Processing on user's request");
             return;
         }
 
-        new GrpcZeroPostProcessing(context, outDir).postprocess();
+        try {
+            new GrpcZeroPostProcessing(context, outDir).postprocess();
+        } catch (IOException e) {
+            throw new CodeGenException("Failed during default gRPC post-processing", e);
+        }
 
+        // Run additional Post-Processors via SPI
+        ServiceLoader<GrpcZeroPostProcessor> loaders = ServiceLoader.load(GrpcZeroPostProcessor.class,
+                GrpcZeroCodeGen.class.getClassLoader());
+        for (GrpcZeroPostProcessor loader : loaders) {
+            log.infof("Running %s post-processor", loader.getClass().getName());
+            try {
+                loader.postprocess(context, outDir);
+            } catch (IOException | GrpcZeroPostProcessing.PostProcessingException e) {
+                throw new CodeGenException("Failed during additional gRPC post-processing in " + loader.getClass().getName(),
+                        e);
+            }
+        }
     }
 
     private Collection<Path> gatherProtosFromDependencies(Path workDir, Set<String> protoDirectories,

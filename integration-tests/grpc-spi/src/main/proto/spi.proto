@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.quarkiverse.grpc.spi";
+option java_outer_classname = "SpiProto";
+
+package spi;
+
+service SpiService {
+  rpc Test (SpiRequest) returns (SpiReply) {}
+}
+
+message SpiRequest {
+  string name = 1;
+}
+
+message SpiReply {
+  string message = 1;
+}

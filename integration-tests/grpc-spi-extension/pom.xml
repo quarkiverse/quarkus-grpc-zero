@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.quarkiverse.grpc.zero</groupId>
+    <artifactId>quarkus-grpc-zero-integration-tests-parent</artifactId>
+    <version>999-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <artifactId>quarkus-grpc-zero-integration-test-grpc-spi-extension</artifactId>
+  <name>Quarkus Grpc Zero - Integration Tests - gRPC - SPI Extension</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.quarkiverse.grpc.zero</groupId>
+      <artifactId>quarkus-grpc-zero</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+
+</project>
