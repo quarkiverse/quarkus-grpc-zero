@@ -85,7 +85,7 @@ class ProtoTypeConflictDetector {
         if (!Arrays.equals(existing, bytes)) {
             throw new CodeGenException(
                     "Conflicting proto definitions for " + fqn
-                            + " first declared in " + seenTypeSource.get(fqn)
+                            + ", first declared in " + seenTypeSource.get(fqn)
                             + ", redefined differently in " + sourceProtoFile);
         }
         log.debugf("Duplicate type %s from %s matches existing from %s", fqn, sourceProtoFile, seenTypeSource.get(fqn));

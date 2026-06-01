@@ -1,0 +1,90 @@
+= SPI Extension Points
+
+include::./includes/attributes.adoc[]
+
+gRPC Zero provides two ServiceLoader-based extension points for downstream projects to plug in custom code generators and post-processors without forking the plugin.
+
+== GrpcZeroGenerator
+
+Implementations of `GrpcZeroGenerator` run after the built-in generators (protoc Java, grpc-java, Mutiny) and before Kotlin generation.
+Each implementation receives the same `CodeGeneratorRequest` handed to the built-in plugins and returns generated files to write to the output directory.
+
+[source,java]
+----
+package io.quarkiverse.grpc.codegen;
+
+public interface GrpcZeroGenerator {
+    Stream<PluginProtos.CodeGeneratorResponse.File> generate(
+            PluginProtos.CodeGeneratorRequest request);
+}
+----
+
+== GrpcZeroPostProcessor
+
+Implementations of `GrpcZeroPostProcessor` run after the built-in post-processing (`GrpcZeroPostProcessing`).
+Each implementation receives the `CodeGenContext` and the output directory path.
+
+[source,java]
+----
+package io.quarkiverse.grpc.codegen;
+
+public interface GrpcZeroPostProcessor {
+    void postprocess(CodeGenContext context, Path outDir) throws IOException;
+}
+----
+
+== Execution order
+
+The full pipeline order is:
+
+. protoc Java
+. grpc-java
+. Mutiny
+. *SPI generators* (`GrpcZeroGenerator` implementations)
+. Kotlin (if enabled)
+. Descriptor set (if enabled)
+. Built-in post-processing
+. *SPI post-processors* (`GrpcZeroPostProcessor` implementations)
+
+Default behavior is unchanged when no SPI implementations are present.
+
+== Registering an implementation
+
+Create a `META-INF/services` file for each SPI in your extension JAR:
+
+[source]
+----
+META-INF/services/io.quarkiverse.grpc.codegen.GrpcZeroGenerator
+META-INF/services/io.quarkiverse.grpc.codegen.GrpcZeroPostProcessor
+----
+
+Each file lists the fully qualified class name of your implementation, one per line.
+
+== Classloader requirement
+
+SPI implementations are discovered using `GrpcZeroCodeGen.class.getClassLoader()`.
+This means the extension JAR must be on the codegen classpath, not just the application classpath.
+
+In Maven, add it as a dependency of the `quarkus-maven-plugin`:
+
+[source,xml]
+----
+<plugin>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-maven-plugin</artifactId>
+  <dependencies>
+    <dependency>
+      <groupId>com.example</groupId>
+      <artifactId>my-grpc-spi-extension</artifactId>
+      <version>${my-extension.version}</version>
+    </dependency>
+  </dependencies>
+</plugin>
+----
+
+Adding it only as a project `<dependency>` is not sufficient for ServiceLoader discovery during code generation.
+
+== Error handling
+
+If a `GrpcZeroGenerator` throws an exception, it is wrapped in a `CodeGenException` and the build fails.
+If a `GrpcZeroPostProcessor` throws an `IOException` or `PostProcessingException`, the build fails with a `CodeGenException` naming the post-processor class.

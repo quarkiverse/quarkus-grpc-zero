@@ -6,4 +6,6 @@
 * xref:dependency-protos.adoc[Protos from Dependencies]
 * xref:descriptor-sets.adoc[Descriptor Sets]
 * xref:post-processing.adoc[Post-Processing]
+* xref:spi-extensions.adoc[SPI Extension Points]
+* xref:duplicate-detection.adoc[Duplicate Proto Detection]
 * xref:troubleshooting.adoc[Troubleshooting]

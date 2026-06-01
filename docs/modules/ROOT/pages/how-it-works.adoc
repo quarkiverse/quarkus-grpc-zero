@@ -10,10 +10,13 @@ Quarkus invokes it during the `generate-code` build phase when `.proto` files ar
 . Collect proto files from the project and optional Maven dependencies
 . Copy protos and import paths into an in-memory workspace (ZeroFs)
 . Parse descriptors with protobuf4j
+. Detect duplicate proto types across sources (see xref:duplicate-detection.adoc[Duplicate Proto Detection])
 . Resolve transitive proto dependencies
-. Run code generator plugins in-process on the JVM
+. Run built-in code generator plugins in-process on the JVM
+. Run SPI generator extensions (see xref:spi-extensions.adoc[SPI Extension Points])
 . Write generated sources to `target/generated-sources/grpc`
-. Run post-processing on the generated Java sources
+. Run built-in post-processing on the generated Java sources
+. Run SPI post-processor extensions
 
 == Proto discovery
 
@@ -52,9 +55,13 @@ After descriptors are ready, gRPC Zero runs these plugins in order:
 
 | Kotlin (`NativePlugin.KOTLIN`, optional)
 | Kotlin message and stub classes
+
+| SPI generators (`GrpcZeroGenerator`, optional)
+| Custom generated files from downstream extensions
 |===
 
 All plugins receive the same `CodeGeneratorRequest` built from the resolved descriptor set.
+See xref:spi-extensions.adoc[SPI Extension Points] for adding custom generators.
 
 == Dependency resolution
 

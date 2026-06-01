@@ -1,0 +1,45 @@
+= Duplicate Proto Detection
+
+include::./includes/attributes.adoc[]
+
+When a project pulls proto files from multiple sources (project sources, scanned dependencies, shared repositories), it is possible to accidentally include two versions of the same proto type.
+gRPC Zero detects this at build time and either deduplicates or fails fast.
+
+== How it works
+
+During descriptor parsing, gRPC Zero tracks every message, enum, and service by its protobuf fully qualified name.
+When the same FQN appears more than once, the raw descriptor bytes are compared:
+
+* *Identical bytes*: the duplicate is logged at debug level and skipped. Two sources shipping the same proto is benign.
+* *Different bytes*: the build fails immediately with a `CodeGenException` naming the conflicting FQN and both source files.
+
+== Why descriptor bytes
+
+Comparison uses compiled `DescriptorProto` / `EnumDescriptorProto` / `ServiceDescriptorProto` bytes, not source text.
+This means cosmetic differences do not cause false positives:
+
+* Comments are not part of the descriptor
+* Whitespace and formatting are discarded by the parser
+* Import ordering lives on the `FileDescriptorProto`, not on per-type descriptors
+* File-level options like `java_package` are outside the comparison
+
+Two teams with the same proto reformatted differently, with different comments, still match.
+
+== When a conflict is reported
+
+A conflict means the same fully qualified name has structurally different definitions.
+The error message names both source files:
+
+[source]
+----
+Conflicting proto definitions for .demo.Foo,
+first declared in /path/to/first.proto,
+redefined differently in /path/to/second.proto
+----
+
+To resolve, ensure only one version of the proto is on the build path, or align the definitions so they are byte-identical.
+
+== Nested types
+
+Nested messages and enums are checked recursively.
+A conflict in a nested type is reported at the parent level since the parent descriptor includes its nested types.

@@ -68,10 +68,10 @@ java -cp ... io.quarkiverse.grpc.codegen.GrpcZeroPostProcessing /path/to/generat
 
 == Parse failures during post-processing
 
-If JavaParser cannot parse a generated file, post-processing logs an error and skips that file.
-The build continues, but the file keeps its original generated content.
+If JavaParser cannot parse a generated file, post-processing throws a `PostProcessingException` and the build fails with a `CodeGenException`.
+This fail-fast behavior ensures that broken generated code is caught immediately rather than silently producing incomplete output.
 
-Check build logs for messages starting with `Unable to parse a class generated using protoc`.
+Review the error message for the file path and parse problems to diagnose the issue.
 
 == Related configuration
 
