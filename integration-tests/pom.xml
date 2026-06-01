@@ -95,8 +95,8 @@
         <module>grpc-cli</module>
         <module>grpc-inprocess</module>
         <module>grpc-descriptor-sets</module>
-        <module>grpc-spi</module>
         <module>grpc-spi-extension</module>
+        <module>grpc-spi</module>
       </modules>
     </profile>
     <profile>
