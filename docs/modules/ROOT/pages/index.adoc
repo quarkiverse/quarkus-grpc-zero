@@ -7,8 +7,6 @@ It generates Java and Kotlin gRPC stubs from `.proto` files without native `prot
 
 Everything runs in-process on the JVM through https://github.com/roastedroot/protobuf4j[protobuf4j].
 
-NOTE: This project is experimental. It passes Quarkus gRPC integration tests, but it has not been widely used in production yet.
-
 == What problem does it solve?
 
 The standard Quarkus gRPC codegen module downloads and runs native `protoc` binaries and plugins.

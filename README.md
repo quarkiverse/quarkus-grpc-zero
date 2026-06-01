@@ -1,8 +1,4 @@
-# Quarkus – gRPC Zero Codegen (Experimental)
-
-> **Experimental**
-> This extension is in its early stages. It successfully passes all relevant Quarkus integration tests, but has not yet been battle-tested in production.
-> We would love for you to try it, push its boundaries, and share feedback to make it better.
+# Quarkus – gRPC Zero Codegen
 
 [![Build](https://img.shields.io/github/actions/workflow/status/quarkiverse/quarkus-grpc-zero/build.yml?branch=main\&logo=GitHub\&style=flat-square)](https://github.com/quarkiverse/quarkus-grpc-zero/actions?query=workflow%3ABuild)
 [![Maven Central](https://img.shields.io/maven-central/v/io.quarkiverse.grpc.zero/quarkus-grpc-zero.svg?label=Maven%20Central\&style=flat-square)](https://search.maven.org/artifact/io.quarkiverse.grpc.zero/quarkus-grpc-zero)
