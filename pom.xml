@@ -71,7 +71,7 @@
     <protobuf4j.version>0.0.4</protobuf4j.version>
     <javaparser.version>3.28.2</javaparser.version>
     <grpc-kotlin.version>1.5.0</grpc-kotlin.version>
-    <grpc.version>1.81.0</grpc.version>
+    <grpc.version>1.82.1</grpc.version>
     <protobuf.version>4.35.1</protobuf.version>
   </properties>
   <dependencyManagement>
